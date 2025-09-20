@@ -30,7 +30,7 @@ const USER_COOKIE = 'user_data'
 
 // Helper function to make API requests
 async function makeApiRequest(endpoint: string, options: RequestInit = {}) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1'
   
   const response = await fetch(`${apiUrl}${endpoint}`, {
     headers: {
@@ -56,7 +56,7 @@ export async function loginAction(formData: LoginFormData) {
     const validatedData = loginSchema.parse(formData)
 
     // Make API request
-    const result = await makeApiRequest('/auth/login', {
+    const result = await makeApiRequest('/accounts/signin/', {
       method: 'POST',
       body: JSON.stringify(validatedData),
     })
@@ -113,7 +113,7 @@ export async function registerAction(formData: RegisterFormData) {
     const { confirmPassword, acceptTerms, ...apiData } = validatedData
 
     // Make API request
-    const result = await makeApiRequest('/auth/register', {
+    const result = await makeApiRequest('/accounts/signup/', {
       method: 'POST',
       body: JSON.stringify(apiData),
     })
@@ -378,7 +378,7 @@ export async function getCurrentUserAction() {
 
     try {
       // Try to get fresh user data from API
-      const result = await makeApiRequest('/auth/me', {
+      const result = await makeApiRequest('/accounts/me/', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${accessToken}`,
