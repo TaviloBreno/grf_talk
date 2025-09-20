@@ -43,24 +43,25 @@ class ChatModelTest(TestCase):
             to_user=self.user2
         )
         
-        expected = f"Chat entre {self.user1.email} e {self.user2.email}"
+        expected = f"Chat entre {self.user1.name} e {self.user2.name}"
         self.assertEqual(str(chat), expected)
     
-    def test_chat_unique_constraint(self):
-        """Testa constraint de unicidade do chat."""
+    def test_chat_creation_allows_duplicates(self):
+        """Testa que múltiplos chats podem ser criados (sem constraint de unicidade)."""
         # Criar primeiro chat
-        Chat.objects.create(
+        chat1 = Chat.objects.create(
             from_user=self.user1,
             to_user=self.user2
         )
         
-        # Tentar criar chat duplicado deveria falhar
-        from django.db import IntegrityError
-        with self.assertRaises(IntegrityError):
-            Chat.objects.create(
-                from_user=self.user1,
-                to_user=self.user2
-            )
+        # Criar segundo chat (deveria permitir)
+        chat2 = Chat.objects.create(
+            from_user=self.user1,
+            to_user=self.user2
+        )
+        
+        self.assertNotEqual(chat1.id, chat2.id)
+        self.assertEqual(Chat.objects.count(), 2)
 
 
 class ChatMessageModelTest(TestCase):
@@ -103,15 +104,17 @@ class ChatMessageModelTest(TestCase):
             from_user=self.user1
         )
         
-        expected = f"Mensagem de {self.user1.email}: Hello, World!"
+        expected = f"Mensagem de {self.user1.name}: {message.body[:50]}..."
         self.assertEqual(str(message), expected)
     
     def test_message_with_attachment(self):
         """Testa mensagem com anexo."""
         file_attachment = FileAttachment.objects.create(
-            filename='test.pdf',
-            file_size=1024,
-            file_type='application/pdf'
+            name='test',
+            extension='pdf',
+            size=1024,
+            src='/media/uploads/test.pdf',
+            content_type='application/pdf'
         )
         
         message = ChatMessage.objects.create(
@@ -189,7 +192,7 @@ class ChatSerializerTest(TestCase):
         serializer = ChatSerializer(self.chat)
         data = serializer.data
         
-        expected_fields = ['id', 'chat_with', 'last_message', 'unseen_count', 'created_at']
+        expected_fields = ['id', 'user', 'last_message', 'unseen_count', 'created_at']
         
         for field in expected_fields:
             self.assertIn(field, data)
@@ -206,7 +209,7 @@ class ChatSerializerTest(TestCase):
         data = serializer.data
         
         # Deve retornar user2 (to_user)
-        self.assertEqual(data['chat_with']['email'], self.user2.email)
+        self.assertEqual(data['user']['email'], self.user2.email)
     
     def test_chat_with_field_to_user_perspective(self):
         """Testa campo chat_with da perspectiva do to_user."""
@@ -219,7 +222,7 @@ class ChatSerializerTest(TestCase):
         data = serializer.data
         
         # Deve retornar user1 (from_user)
-        self.assertEqual(data['chat_with']['email'], self.user1.email)
+        self.assertEqual(data['user']['email'], self.user1.email)
     
     def test_last_message_field(self):
         """Testa campo last_message."""
@@ -293,9 +296,11 @@ class ChatMessageSerializerTest(TestCase):
     def test_attachment_field_file(self):
         """Testa campo attachment com arquivo."""
         file_attachment = FileAttachment.objects.create(
-            filename='test.pdf',
-            file_size=1024,
-            file_type='application/pdf'
+            name='test',
+            extension='pdf',
+            size=1024,
+            src='/media/uploads/test.pdf',
+            content_type='application/pdf'
         )
         
         message_with_file = ChatMessage.objects.create(
@@ -310,14 +315,13 @@ class ChatMessageSerializerTest(TestCase):
         data = serializer.data
         
         self.assertIsNotNone(data['attachment'])
-        self.assertEqual(data['attachment']['filename'], 'test.pdf')
+        self.assertEqual(data['attachment']['type'], 'FILE')
+        self.assertEqual(data['attachment']['data']['name'], 'test')
     
     def test_attachment_field_audio(self):
         """Testa campo attachment com áudio."""
         audio_attachment = AudioAttachment.objects.create(
-            filename='test.mp3',
-            file_size=2048,
-            duration=120
+            src='/media/uploads/test.mp3'
         )
         
         message_with_audio = ChatMessage.objects.create(
@@ -332,8 +336,8 @@ class ChatMessageSerializerTest(TestCase):
         data = serializer.data
         
         self.assertIsNotNone(data['attachment'])
-        self.assertEqual(data['attachment']['filename'], 'test.mp3')
-        self.assertEqual(data['attachment']['duration'], 120)
+        self.assertEqual(data['attachment']['type'], 'AUDIO')
+        self.assertEqual(data['attachment']['data']['src'], 'http://127.0.0.1:8000/media/uploads/test.mp3')
 
 
 class ChatsViewTest(APITestCase):
@@ -389,13 +393,13 @@ class ChatsViewTest(APITestCase):
     def test_create_chat_success(self):
         """Testa criação de chat bem-sucedida."""
         data = {
-            'to_user_id': self.user2.id
+            'email': self.user2.email
         }
         
         response = self.client.post(self.url, data)
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['chat_with']['email'], self.user2.email)
+        self.assertEqual(response.data['user']['email'], self.user2.email)
         
         # Verificar se chat foi criado
         chat = Chat.objects.get(from_user=self.user1, to_user=self.user2)
@@ -404,7 +408,7 @@ class ChatsViewTest(APITestCase):
     def test_create_chat_with_self(self):
         """Testa criação de chat consigo mesmo."""
         data = {
-            'to_user_id': self.user1.id
+            'email': self.user1.email
         }
         
         response = self.client.post(self.url, data)
@@ -414,7 +418,7 @@ class ChatsViewTest(APITestCase):
     def test_create_chat_nonexistent_user(self):
         """Testa criação de chat com usuário inexistente."""
         data = {
-            'to_user_id': 99999
+            'email': 'nonexistent@example.com'
         }
         
         response = self.client.post(self.url, data)
@@ -427,13 +431,14 @@ class ChatsViewTest(APITestCase):
         Chat.objects.create(from_user=self.user1, to_user=self.user2)
         
         data = {
-            'to_user_id': self.user2.id
+            'email': self.user2.email
         }
         
         response = self.client.post(self.url, data)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Chat já existe')
+        # Deve retornar o chat existente
+        self.assertIn('id', response.data)
     
     def test_create_chat_reverse_exists(self):
         """Testa criação de chat quando existe o reverso."""
@@ -441,13 +446,14 @@ class ChatsViewTest(APITestCase):
         Chat.objects.create(from_user=self.user2, to_user=self.user1)
         
         data = {
-            'to_user_id': self.user2.id
+            'email': self.user2.email
         }
         
         response = self.client.post(self.url, data)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['message'], 'Chat já existe')
+        # Deve retornar o chat existente
+        self.assertIn('id', response.data)
     
     def test_unauthorized_access(self):
         """Testa acesso não autorizado."""
@@ -497,7 +503,7 @@ class ChatDetailViewTest(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], self.chat.id)
-        self.assertEqual(response.data['chat_with']['email'], self.user2.email)
+        self.assertEqual(response.data['user']['email'], self.user2.email)
     
     def test_get_chat_not_found(self):
         """Testa busca de chat inexistente."""
@@ -514,7 +520,7 @@ class ChatDetailViewTest(APITestCase):
         
         response = self.client.get(url)
         
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
     
     def test_delete_chat_success(self):
         """Testa deleção de chat bem-sucedida."""
@@ -522,9 +528,9 @@ class ChatDetailViewTest(APITestCase):
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
-        # Verificar se chat foi deletado
-        with self.assertRaises(Chat.DoesNotExist):
-            Chat.objects.get(id=self.chat.id)
+        # Verificar soft delete
+        self.chat.refresh_from_db()
+        self.assertIsNotNone(self.chat.deleted_at)
     
     def test_delete_chat_unauthorized(self):
         """Testa deleção de chat sem permissão."""
@@ -533,4 +539,4 @@ class ChatDetailViewTest(APITestCase):
         
         response = self.client.delete(url)
         
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

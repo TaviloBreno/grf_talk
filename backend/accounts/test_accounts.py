@@ -188,7 +188,7 @@ class UserSerializerTest(TestCase):
         data = serializer.data
         
         self.assertIn('ui-avatars.com', data['avatar_url'])
-        self.assertEqual(data['initials'], 'TE')
+        self.assertEqual(data['initials'], 'TU')
     
     def test_serializer_custom_avatar(self):
         """Testa serializer com avatar customizado."""
@@ -225,8 +225,7 @@ class SignInViewTest(APITestCase):
         response = self.client.post(self.url, data)
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn('access', response.data)
-        self.assertIn('refresh', response.data)
+        self.assertIn('token', response.data)
         self.assertIn('user', response.data)
     
     def test_signin_invalid_credentials(self):
@@ -393,7 +392,7 @@ class AvatarViewTest(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['user_id'], self.user.id)
         self.assertEqual(response.data['name'], 'Test User')
-        self.assertEqual(response.data['initials'], 'TE')
+        self.assertEqual(response.data['initials'], 'TU')
         self.assertIn('avatar_url', response.data)
         self.assertIn('default_avatar_url', response.data)
         self.assertFalse(response.data['has_custom_avatar'])

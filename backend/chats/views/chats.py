@@ -91,18 +91,36 @@ class ChatsView(BaseView):
 class ChatView(BaseView):
     """View para operações em chat específico."""
     
-    def delete(self, request, chat_id):
+    def get(self, request, pk):
+        """
+        Busca um chat específico.
+        
+        Args:
+            pk: ID do chat
+            
+        Returns:
+            Response: Chat serializado
+        """
+        # Garantir que o chat pertence ao usuário
+        chat = self.chat_belongs_to_user(pk, request.user.id)
+        
+        # Serializar chat
+        serializer = ChatSerializer(chat, context={'request': request})
+        
+        return Response(serializer.data)
+    
+    def delete(self, request, pk):
         """
         Soft delete de um chat.
         
         Args:
-            chat_id: ID do chat a ser deletado
+            pk: ID do chat a ser deletado
             
         Returns:
             Response: Confirmação de sucesso
         """
         # Garantir que o chat pertence ao usuário
-        chat = self.chat_belongs_to_user(chat_id, request.user.id)
+        chat = self.chat_belongs_to_user(pk, request.user.id)
         
         # Fazer soft delete
         chat.deleted_at = timezone.now()
@@ -111,14 +129,14 @@ class ChatView(BaseView):
         # Emitir evento socket de delete para ambos os usuários
         socket.emit_to_user(chat.from_user.id, 'update_chat', {
             'type': 'delete',
-            'chat_id': chat_id,
+            'chat_id': pk,
             'from_user_id': chat.from_user.id,
             'to_user_id': chat.to_user.id
         })
         
         socket.emit_to_user(chat.to_user.id, 'update_chat', {
             'type': 'delete',
-            'chat_id': chat_id,
+            'chat_id': pk,
             'from_user_id': chat.from_user.id,
             'to_user_id': chat.to_user.id
         })
