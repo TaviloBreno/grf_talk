@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
-import { useAuthStore } from '@/stores/auth-store'
+// import { useAuthStore } from '@/stores/auth-store'
 
 // API configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
@@ -19,8 +19,11 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   (config: AxiosRequestConfig): any => {
     // Add auth token to requests
-    const authStore = useAuthStore.getState()
-    const token = authStore.user?.accessToken
+    // const authStore = useAuthStore.getState()
+    // const token = authStore.user?.accessToken
+    
+    // TODO: Get token from cookies or other storage method
+    const token = null
     
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
@@ -58,7 +61,7 @@ apiClient.interceptors.response.use(
     return response
   },
   async (error: AxiosError) => {
-    const authStore = useAuthStore.getState()
+    // const authStore = useAuthStore.getState()
     
     if (process.env.NODE_ENV === 'development') {
       console.error(`❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
@@ -70,43 +73,49 @@ apiClient.interceptors.response.use(
 
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {
-      const refreshToken = authStore.user?.refreshToken
+      // TODO: Implement token refresh logic
+      // const refreshToken = authStore.user?.refreshToken
       
       // Try to refresh token if available
-      if (refreshToken && !error.config?.url?.includes('/auth/refresh')) {
-        try {
-          const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh`, {
-            refreshToken,
-          })
+      // if (refreshToken && !error.config?.url?.includes('/auth/refresh')) {
+      //   try {
+      //     const refreshResponse = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+      //       refreshToken,
+      //     })
           
-          const { accessToken, refreshToken: newRefreshToken } = refreshResponse.data.data
+      //     const { accessToken, refreshToken: newRefreshToken } = refreshResponse.data.data
           
-          // Update auth store with new tokens
-          authStore.setTokens(accessToken, newRefreshToken)
+      //     // Update auth store with new tokens
+      //     authStore.setTokens(accessToken, newRefreshToken)
           
-          // Retry original request with new token
-          if (error.config && error.config.headers) {
-            error.config.headers.Authorization = `Bearer ${accessToken}`
-            return apiClient.request(error.config)
-          }
-        } catch (refreshError) {
-          // Refresh failed, logout user
-          console.error('Token refresh failed:', refreshError)
-          authStore.logout()
+      //     // Retry original request with new token
+      //     if (error.config && error.config.headers) {
+      //       error.config.headers.Authorization = `Bearer ${accessToken}`
+      //       return apiClient.request(error.config)
+      //     }
+      //   } catch (refreshError) {
+      //     // Refresh failed, logout user
+      //     console.error('Token refresh failed:', refreshError)
+      //     authStore.logout()
           
-          // Redirect to login if not already there
-          if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
-            window.location.href = '/auth/login?expired=true'
-          }
-        }
-      } else {
-        // No refresh token available, logout user
-        authStore.logout()
+      //     // Redirect to login if not already there
+      //     if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
+      //       window.location.href = '/auth/login?expired=true'
+      //     }
+      //   }
+      // } else {
+      //   // No refresh token available, logout user
+      //   authStore.logout()
         
-        // Redirect to login if not already there
-        if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
-          window.location.href = '/auth/login'
-        }
+      //   // Redirect to login if not already there
+      //   if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
+      //     window.location.href = '/auth/login'
+      //   }
+      // }
+      
+      // For now, just redirect to login
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
+        window.location.href = '/auth/login'
       }
     }
 

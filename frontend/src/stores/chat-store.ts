@@ -100,7 +100,16 @@ export const useChatStore = create<ChatStoreState>()(
             state.error = null
           })
 
-          const response = await chatApi.createChat(data)
+          // Add default values for required fields
+          const chatData = {
+            ...data,
+            isPublic: data.settings?.isPublic ?? false,
+            allowInvites: data.settings?.allowInvites ?? true,
+            allowFileSharing: data.settings?.allowFileSharing ?? true,
+            maxFileSize: data.settings?.maxFileSize ?? 10,
+          }
+
+          const response = await chatApi.createChat(chatData)
           
           if (response.success && response.data) {
             const newChat = response.data
@@ -234,7 +243,13 @@ export const useChatStore = create<ChatStoreState>()(
       // Send message
       sendMessage: async (chatId: string, data: SendMessageData) => {
         try {
-          const response = await chatApi.sendMessage(chatId, data)
+          // Add default type if not provided
+          const messageData = {
+            ...data,
+            type: data.type || 'text' as const,
+          }
+
+          const response = await chatApi.sendMessage(chatId, messageData)
           
           if (response.success && response.data) {
             const newMessage = response.data
@@ -391,7 +406,7 @@ export const useChatStore = create<ChatStoreState>()(
       // Add participant
       addParticipant: async (chatId: string, userId: string) => {
         try {
-          const response = await chatApi.addParticipant(chatId, { userId })
+          const response = await chatApi.addParticipant(chatId, { userId, role: 'member' })
           
           if (response.success) {
             // Reload chat to get updated participants
@@ -399,7 +414,7 @@ export const useChatStore = create<ChatStoreState>()(
               const chatResponse = await chatApi.getChatById(chatId)
               if (chatResponse.success && chatResponse.data) {
                 set((state) => {
-                  state.activeChat = chatResponse.data
+                  state.activeChat = chatResponse.data!
                 })
               }
             }
@@ -430,7 +445,7 @@ export const useChatStore = create<ChatStoreState>()(
               const chatResponse = await chatApi.getChatById(chatId)
               if (chatResponse.success && chatResponse.data) {
                 set((state) => {
-                  state.activeChat = chatResponse.data
+                  state.activeChat = chatResponse.data!
                 })
               }
             }
@@ -462,7 +477,7 @@ export const useChatStore = create<ChatStoreState>()(
           
           if (response.success && response.data) {
             set((state) => {
-              state.searchResults = response.data.data
+              state.searchResults = response.data?.data || []
               state.isLoading = false
             })
           } else {

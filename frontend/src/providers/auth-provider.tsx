@@ -2,14 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
-import { User } from '@/types'
+import { User, LoginCredentials, RegisterCredentials } from '@/types'
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (credentials: LoginCredentials) => Promise<void>
   logout: () => Promise<void>
-  register: (email: string, password: string, name: string) => Promise<void>
+  register: (credentials: RegisterCredentials) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
