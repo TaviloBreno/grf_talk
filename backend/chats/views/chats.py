@@ -127,18 +127,18 @@ class ChatView(BaseView):
         chat.save()
         
         # Emitir evento socket de delete para ambos os usuários
-        # socket.emit_to_user(chat.from_user.id, 'update_chat', {
-        #     'type': 'delete',
-        #     'chat_id': pk,
-        #     'from_user_id': chat.from_user.id,
-        #     'to_user_id': chat.to_user.id
-        # })
+        socket.emit_to_user(chat.from_user.id, 'update_chat', {
+            'type': 'delete',
+            'chat_id': pk,
+            'from_user_id': chat.from_user.id,
+            'to_user_id': chat.to_user.id
+        })
         
-        # socket.emit_to_user(chat.to_user.id, 'update_chat', {
-        #     'type': 'delete',
-        #     'chat_id': pk,
-        #     'from_user_id': chat.from_user.id,
-        #     'to_user_id': chat.to_user.id
-        # })
+        socket.emit_to_user(chat.to_user.id, 'update_chat', {
+            'type': 'delete',
+            'chat_id': pk,
+            'from_user_id': chat.from_user.id,
+            'to_user_id': chat.to_user.id
+        })
         
         return Response({'success': True})
