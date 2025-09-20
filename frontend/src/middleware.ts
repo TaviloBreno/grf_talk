@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { jwtVerify } from 'jose'
 
 // Environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+const JWT_SECRET = process.env.JWT_SECRET || 'django-insecure-6!^h7n-j7(2isd$0lhfx600tsd6%eg8&n4i5bfn48%s_*vr42f'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1'
 
 // Route configurations
 const AUTH_ROUTES = [
