@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Q
-from core.socket import socket
+# from core.socket import socket
 from .base import BaseView
 from ..models import Chat, ChatMessage
 from ..serializers import ChatMessageSerializer
