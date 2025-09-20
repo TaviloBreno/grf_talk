@@ -30,10 +30,12 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Chat, Contact } from '@/types/chat'
+import type { User } from '@/types'
 
 interface ChatHeaderProps {
   chat?: Chat
   contact?: Contact
+  currentUser?: User
   isGroup?: boolean
   onBack?: () => void
   onVoiceCall?: () => void
@@ -53,6 +55,7 @@ interface ChatHeaderProps {
 export function ChatHeader({
   chat,
   contact,
+  currentUser,
   isGroup = false,
   onBack,
   onVoiceCall,

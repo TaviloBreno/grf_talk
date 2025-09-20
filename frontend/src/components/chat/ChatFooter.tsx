@@ -9,17 +9,33 @@ import {
   Image,
   FileText,
   X,
-  Loader2
+  Loader2,
+  Camera,
+  Mic,
+  Bold,
+  Italic,
+  Underline
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import EmojiPicker from './EmojiPicker'
+import AudioRecorder from './AudioRecorder'
+import type { Message } from '@/types/chat'
 
 interface ChatFooterProps {
-  onSendMessage: (content: string, attachments?: File[]) => Promise<void>
-  onTyping?: (isTyping: boolean) => void
+  onSendMessage: (content: string, attachments?: File[]) => Promise<void> | void
+  onSendAudio?: (audioBlob: Blob, duration: number) => Promise<void>
+  onTypingStart?: () => void
+  onTypingStop?: () => void
+  replyingTo?: Message | null
+  editingMessage?: Message | null
+  onCancelReply?: () => void
+  onCancelEdit?: () => void
   disabled?: boolean
   placeholder?: string
   maxLength?: number
   allowAttachments?: boolean
+  allowAudio?: boolean
+  allowFormatting?: boolean
   className?: string
 }
 
@@ -31,20 +47,25 @@ interface AttachmentPreview {
 
 export function ChatFooter({
   onSendMessage,
+  onSendAudio,
   onTyping,
   disabled = false,
   placeholder = 'Digite uma mensagem...',
   maxLength = 1000,
   allowAttachments = true,
+  allowAudio = true,
+  allowFormatting = false,
   className
 }: ChatFooterProps) {
   const [message, setMessage] = useState('')
   const [attachments, setAttachments] = useState<AttachmentPreview[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+  const [showAudioRecorder, setShowAudioRecorder] = useState(false)
   
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Auto-resize textarea
@@ -122,6 +143,20 @@ export function ChatFooter({
     }
   }
 
+  const handleSendAudio = async (audioBlob: Blob, duration: number) => {
+    if (!onSendAudio) return
+
+    try {
+      setIsLoading(true)
+      await onSendAudio(audioBlob, duration)
+      setShowAudioRecorder(false)
+    } catch (error) {
+      console.error('Error sending audio:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -131,7 +166,10 @@ export function ChatFooter({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    
+    processFiles(files)
+  }
+
+  const processFiles = (files: File[]) => {
     if (files.length === 0) return
 
     const newAttachments: AttachmentPreview[] = []
@@ -150,11 +188,6 @@ export function ChatFooter({
     })
 
     setAttachments(prev => [...prev, ...newAttachments])
-    
-    // Clear input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
   }
 
   const removeAttachment = (index: number) => {
@@ -171,7 +204,87 @@ export function ChatFooter({
     fileInputRef.current?.click()
   }
 
+  const openImageDialog = () => {
+    imageInputRef.current?.click()
+  }
+
+  const insertEmoji = (emoji: string) => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const newMessage = message.substring(0, start) + emoji + message.substring(end)
+    
+    setMessage(newMessage)
+    
+    // Restore cursor position
+    setTimeout(() => {
+      textarea.focus()
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length)
+    }, 0)
+  }
+
+  const applyFormatting = (format: 'bold' | 'italic' | 'underline') => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const selectedText = message.substring(start, end)
+    
+    if (selectedText) {
+      let formattedText = ''
+      switch (format) {
+        case 'bold':
+          formattedText = `**${selectedText}**`
+          break
+        case 'italic':
+          formattedText = `*${selectedText}*`
+          break
+        case 'underline':
+          formattedText = `__${selectedText}__`
+          break
+      }
+      
+      const newMessage = message.substring(0, start) + formattedText + message.substring(end)
+      setMessage(newMessage)
+      
+      // Restore cursor position
+      setTimeout(() => {
+        textarea.focus()
+        textarea.setSelectionRange(start + formattedText.length, start + formattedText.length)
+      }, 0)
+    }
+  }
+
   const canSend = (message.trim().length > 0 || attachments.length > 0) && !isLoading && !disabled
+
+  // Clear file inputs
+  const clearFileInputs = () => {
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (imageInputRef.current) imageInputRef.current.value = ''
+  }
+
+  useEffect(() => {
+    clearFileInputs()
+  }, [attachments])
+
+  // If showing audio recorder
+  if (showAudioRecorder) {
+    return (
+      <div className={cn(
+        'border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4',
+        className
+      )}>
+        <AudioRecorder
+          onAudioReady={handleSendAudio}
+          onCancel={() => setShowAudioRecorder(false)}
+          disabled={disabled || isLoading}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className={cn(
@@ -228,6 +341,36 @@ export function ChatFooter({
 
       {/* Input Area */}
       <div className="p-4">
+        {/* Formatting toolbar */}
+        {allowFormatting && isFocused && (
+          <div className="flex items-center space-x-1 mb-2 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => applyFormatting('bold')}
+              className="h-8 w-8 p-0"
+            >
+              <Bold className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => applyFormatting('italic')}
+              className="h-8 w-8 p-0"
+            >
+              <Italic className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => applyFormatting('underline')}
+              className="h-8 w-8 p-0"
+            >
+              <Underline className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
         <div className={cn(
           'flex items-end space-x-2 rounded-lg border transition-colors',
           isFocused 
@@ -235,18 +378,51 @@ export function ChatFooter({
             : 'border-gray-300 dark:border-gray-600',
           disabled && 'opacity-50'
         )}>
-          {/* Attachment Button */}
-          {allowAttachments && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={openFileDialog}
+          {/* Attachment Buttons */}
+          <div className="flex items-center shrink-0 mb-1">
+            {allowAttachments && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={openImageDialog}
+                  disabled={disabled || isLoading}
+                  className="h-10 w-10"
+                >
+                  <Camera className="h-5 w-5" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={openFileDialog}
+                  disabled={disabled || isLoading}
+                  className="h-10 w-10"
+                >
+                  <Paperclip className="h-5 w-5" />
+                </Button>
+              </>
+            )}
+
+            {/* Emoji Picker */}
+            <EmojiPicker
+              onEmojiSelect={insertEmoji}
               disabled={disabled || isLoading}
-              className="shrink-0 mb-1"
-            >
-              <Paperclip className="h-5 w-5" />
-            </Button>
-          )}
+            />
+
+            {/* Audio Recorder */}
+            {allowAudio && onSendAudio && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowAudioRecorder(true)}
+                disabled={disabled || isLoading}
+                className="h-10 w-10"
+              >
+                <Mic className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
 
           {/* Text Input */}
           <div className="flex-1 min-w-0">
@@ -271,7 +447,7 @@ export function ChatFooter({
             disabled={!canSend}
             size="icon"
             className={cn(
-              'shrink-0 mb-1 transition-all duration-200',
+              'shrink-0 mb-1 transition-all duration-200 h-10 w-10',
               canSend 
                 ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
@@ -300,12 +476,21 @@ export function ChatFooter({
         )}
       </div>
 
-      {/* Hidden File Input */}
+      {/* Hidden File Inputs */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,application/pdf,.doc,.docx,.txt,.zip,.rar"
+        accept=".pdf,.doc,.docx,.txt,.zip,.rar"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      
+      <input
+        ref={imageInputRef}
+        type="file"
+        multiple
+        accept="image/*"
         onChange={handleFileSelect}
         className="hidden"
       />

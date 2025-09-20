@@ -3,24 +3,19 @@
 import { useEffect, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
-
-interface TypingUser {
-  id: string
-  name: string
-  avatar?: string
-}
+import type { TypingUser } from '@/types/chat'
 
 interface TypingIndicatorProps {
-  typingUsers: TypingUser[]
+  users: TypingUser[]
   className?: string
 }
 
-export function TypingIndicator({ typingUsers, className }: TypingIndicatorProps) {
+export function TypingIndicator({ users, className }: TypingIndicatorProps) {
   const [dots, setDots] = useState('')
 
   // Animate dots
   useEffect(() => {
-    if (typingUsers.length === 0) return
+    if (users.length === 0) return
 
     const interval = setInterval(() => {
       setDots(prev => {
@@ -30,9 +25,9 @@ export function TypingIndicator({ typingUsers, className }: TypingIndicatorProps
     }, 500)
 
     return () => clearInterval(interval)
-  }, [typingUsers.length])
+  }, [users.length])
 
-  if (typingUsers.length === 0) {
+  if (users.length === 0) {
     return null
   }
 
@@ -46,12 +41,12 @@ export function TypingIndicator({ typingUsers, className }: TypingIndicatorProps
   }
 
   const getTypingText = () => {
-    if (typingUsers.length === 1) {
-      return `${typingUsers[0].name} está digitando${dots}`
-    } else if (typingUsers.length === 2) {
-      return `${typingUsers[0].name} e ${typingUsers[1].name} estão digitando${dots}`
+    if (users.length === 1) {
+      return `${users[0].name} está digitando${dots}`
+    } else if (users.length === 2) {
+      return `${users[0].name} e ${users[1].name} estão digitando${dots}`
     } else {
-      return `${typingUsers[0].name} e mais ${typingUsers.length - 1} pessoas estão digitando${dots}`
+      return `${users[0].name} e mais ${users.length - 1} pessoas estão digitando${dots}`
     }
   }
 
@@ -62,7 +57,7 @@ export function TypingIndicator({ typingUsers, className }: TypingIndicatorProps
     )}>
       {/* Avatars */}
       <div className="flex -space-x-1">
-        {typingUsers.slice(0, 3).map((user) => (
+        {users.slice(0, 3).map((user: TypingUser) => (
           <Avatar key={user.id} className="h-6 w-6 border-2 border-white dark:border-gray-800">
             <AvatarImage src={user.avatar} alt={user.name} />
             <AvatarFallback className="bg-blue-500 text-white text-xs">

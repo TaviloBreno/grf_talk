@@ -1,5 +1,11 @@
 import { User } from './index'
 
+export interface TypingUser {
+  id: string
+  name: string
+  avatar?: string
+}
+
 // Contact related types
 export interface Contact {
   id: string
@@ -77,6 +83,7 @@ export interface Message {
   sender: User
   content: string
   type: MessageType
+  status: MessageStatus
   attachments: MessageAttachment[]
   replyTo?: string
   reactions: MessageReaction[]
@@ -94,6 +101,13 @@ export type MessageType =
   | 'file' 
   | 'system' 
   | 'announcement'
+
+export type MessageStatus = 
+  | 'sending' 
+  | 'sent' 
+  | 'delivered' 
+  | 'read' 
+  | 'failed'
 
 export interface MessageAttachment {
   id: string
