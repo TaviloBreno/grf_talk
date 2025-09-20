@@ -31,7 +31,7 @@ class SignInView(APIView, Authentication):
             raise AuthenticationFailed('Credenciais inválidas')
         
         # Serializa o usuário
-        serializer = UserSerializer(user)
+        serializer = UserSerializer(user, context={'request': request})
         
         # Gera os tokens JWT
         refresh = RefreshToken.for_user(user)
@@ -65,7 +65,7 @@ class SignUpView(APIView, Authentication):
             raise AuthenticationFailed('Email já está em uso')
         
         # Serializa o usuário
-        serializer = UserSerializer(user)
+        serializer = UserSerializer(user, context={'request': request})
         
         # Gera os tokens JWT
         refresh = RefreshToken.for_user(user)
@@ -89,7 +89,7 @@ class UserView(APIView):
         user.save()
         
         # Serializa e retorna o usuário
-        serializer = UserSerializer(user)
+        serializer = UserSerializer(user, context={'request': request})
         return Response(serializer.data)
     
     def put(self, request):
@@ -151,5 +151,103 @@ class UserView(APIView):
         user.save()
         
         # Serializa e retorna o usuário atualizado
-        serializer = UserSerializer(user)
+        serializer = UserSerializer(user, context={'request': request})
         return Response(serializer.data)
+
+
+class AvatarView(APIView):
+    """View para gerenciar avatar do usuário."""
+    
+    def get(self, request):
+        """Retorna informações do avatar do usuário atual."""
+        user = request.user
+        
+        return Response({
+            'user_id': user.id,
+            'name': user.name,
+            'initials': user.get_initials(),
+            'avatar_url': user.get_avatar_url(request),
+            'default_avatar_url': user.get_default_avatar(),
+            'has_custom_avatar': (user.avatar and 
+                                user.avatar != '/media/avatars/default-avatar.png' and
+                                not user.avatar.startswith('https://ui-avatars.com'))
+        })
+    
+    def post(self, request):
+        """Upload de novo avatar."""
+        user = request.user
+        
+        avatar_file = request.FILES.get('avatar')
+        if not avatar_file:
+            raise ValidationError('Arquivo de avatar é obrigatório')
+        
+        # Validar tipo de arquivo
+        allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+        if avatar_file.content_type not in allowed_types:
+            raise ValidationError('Tipo de arquivo não permitido. Use JPEG, PNG, GIF ou WebP')
+        
+        # Validar tamanho (max 5MB)
+        if avatar_file.size > 5 * 1024 * 1024:
+            raise ValidationError('Arquivo muito grande. Máximo 5MB')
+        
+        # Configurar storage
+        fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'avatars'))
+        
+        # Gerar nome único
+        file_extension = avatar_file.name.split('.')[-1].lower()
+        filename = f"user_{user.id}_{int(now().timestamp())}.{file_extension}"
+        
+        try:
+            # Remover avatar anterior se existir
+            if (user.avatar and 
+                user.avatar != '/media/avatars/default-avatar.png' and
+                not user.avatar.startswith('https://ui-avatars.com')):
+                old_path = user.avatar.replace('/media/', '')
+                old_file_path = os.path.join(settings.MEDIA_ROOT, old_path)
+                if os.path.exists(old_file_path):
+                    os.remove(old_file_path)
+            
+            # Salvar novo arquivo
+            fs.save(filename, avatar_file)
+            new_avatar_path = f'/media/avatars/{filename}'
+            
+            # Atualizar usuário
+            user.avatar = new_avatar_path
+            user.save()
+            
+            return Response({
+                'message': 'Avatar atualizado com sucesso',
+                'avatar_url': user.get_avatar_url(request),
+                'has_custom_avatar': True
+            })
+            
+        except Exception as e:
+            # Cleanup em caso de erro
+            if 'filename' in locals():
+                file_path = fs.path(filename)
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            raise ValidationError('Erro ao fazer upload do avatar')
+    
+    def delete(self, request):
+        """Remove avatar customizado e volta ao padrão."""
+        user = request.user
+        
+        # Remover arquivo anterior se existir
+        if (user.avatar and 
+            user.avatar != '/media/avatars/default-avatar.png' and
+            not user.avatar.startswith('https://ui-avatars.com')):
+            old_path = user.avatar.replace('/media/', '')
+            old_file_path = os.path.join(settings.MEDIA_ROOT, old_path)
+            if os.path.exists(old_file_path):
+                os.remove(old_file_path)
+        
+        # Resetar para padrão
+        user.avatar = '/media/avatars/default-avatar.png'
+        user.save()
+        
+        return Response({
+            'message': 'Avatar resetado para padrão',
+            'avatar_url': user.get_avatar_url(request),
+            'has_custom_avatar': False
+        })

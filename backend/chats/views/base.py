@@ -1,4 +1,6 @@
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils import timezone
 from django.db import models
 from accounts.models import User
@@ -8,6 +10,8 @@ from ..utils.exceptions import UserNotFound, ChatNotFound
 
 
 class BaseView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     """Classe base para views do app chats com métodos utilitários reutilizáveis."""
     
     def get_user(self, raise_exception=True, **kwargs):
@@ -43,11 +47,12 @@ class BaseView(APIView):
             dict: ChatSerializer.data se chat existir, None caso contrário
         """
         # Busca chat onde user_id é from_user e to_user é to_user OU vice-versa
+        from django.db.models import Q
         existing_chat = Chat.objects.filter(
             deleted_at__isnull=True
         ).filter(
-            (models.Q(from_user_id=user_id) & models.Q(to_user=to_user)) |
-            (models.Q(from_user=to_user) & models.Q(to_user_id=user_id))
+            (Q(from_user_id=user_id) & Q(to_user=to_user)) |
+            (Q(from_user=to_user) & Q(to_user_id=user_id))
         ).first()
         
         if existing_chat:

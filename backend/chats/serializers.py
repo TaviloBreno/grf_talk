@@ -13,11 +13,12 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ChatMessage
-        fields = ["id", "body", "attachment", "from_user", "viewed_at", "created_at"]
+        fields = ["id", "body", "attachment", "chat", "from_user", "viewed_at", "created_at"]
     
     def get_from_user(self, obj):
         """Retorna o usuário remetente serializado."""
-        return UserSerializer(obj.from_user).data
+        request = self.context.get('request')
+        return UserSerializer(obj.from_user, context={'request': request}).data
     
     def get_attachment(self, obj):
         """Retorna o anexo serializado conforme o tipo."""
@@ -57,17 +58,18 @@ class ChatSerializer(serializers.ModelSerializer):
     def get_user(self, obj):
         """Retorna o 'outro usuário' do chat (não quem está logado)."""
         current_user = self.context.get('request').user if self.context.get('request') else None
+        request = self.context.get('request')
         
         if current_user:
             # Se o usuário logado é o from_user, retorna o to_user
             if obj.from_user == current_user:
-                return UserSerializer(obj.to_user).data
+                return UserSerializer(obj.to_user, context={'request': request}).data
             # Caso contrário, retorna o from_user
             else:
-                return UserSerializer(obj.from_user).data
+                return UserSerializer(obj.from_user, context={'request': request}).data
         
         # Fallback: retorna o to_user se não houver contexto de request
-        return UserSerializer(obj.to_user).data
+        return UserSerializer(obj.to_user, context={'request': request}).data
     
     def get_unseen_count(self, obj):
         """Retorna a quantidade de mensagens não vistas no chat para o usuário logado."""
