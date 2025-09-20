@@ -9,43 +9,22 @@ import ChatHeader from './ChatHeader'
 import ChatFooter from './ChatFooter'
 import MessageItem from './MessageItem'
 import TypingIndicator from './TypingIndicator'
+import ConnectionStatus from '@/components/ui/connection-status'
+import { useChatStore, useChatWebSocket } from '@/stores/chat'
+import { useWebSocket } from '@/providers/websocket'
 import type { Chat, Message, TypingUser } from '@/types/chat'
 import type { User } from '@/types'
 
 interface ChatContainerProps {
   chat: Chat
-  messages: Message[]
   currentUser: User
-  typingUsers: TypingUser[]
-  isLoading: boolean
   className?: string
-  onSendMessage: (content: string, attachments?: File[]) => void
-  onEditMessage: (messageId: string, content: string) => void
-  onDeleteMessage: (messageId: string) => void
-  onReactToMessage: (messageId: string, emoji: string) => void
-  onStarMessage: (messageId: string) => void
-  onReplyToMessage: (message: Message) => void
-  onLoadMoreMessages: () => void
-  onTypingStart: () => void
-  onTypingStop: () => void
 }
 
 export function ChatContainer({
   chat,
-  messages,
   currentUser,
-  typingUsers,
-  isLoading,
-  className,
-  onSendMessage,
-  onEditMessage,
-  onDeleteMessage,
-  onReactToMessage,
-  onStarMessage,
-  onReplyToMessage,
-  onLoadMoreMessages,
-  onTypingStart,
-  onTypingStop
+  className
 }: ChatContainerProps) {
   const [showScrollButton, setShowScrollButton] = useState(false)
   const [replyingTo, setReplyingTo] = useState<Message | null>(null)
@@ -53,6 +32,41 @@ export function ChatContainer({
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const lastMessageRef = useRef<HTMLDivElement>(null)
+
+  // Store and WebSocket integration
+  const { 
+    messageCache, 
+    typingUsers, 
+    connectionQuality,
+    addMessage,
+    updateMessage,
+    deleteMessage,
+    setTypingUsers
+  } = useChatStore()
+  
+  const { 
+    sendMessage, 
+    sendTyping, 
+    markMessageAsRead,
+    joinChat,
+    leaveChat 
+  } = useWebSocket()
+  
+  // Initialize WebSocket integration
+  useChatWebSocket()
+
+  // Get messages for current chat
+  const chatMessages = messageCache[chat.id]?.messages || []
+  const chatTypingUsers = typingUsers[chat.id] || []
+  const isLoading = messageCache[chat.id]?.isLoading || false
+
+  // Join/leave chat on mount/unmount
+  useEffect(() => {
+    if (chat.id) {
+      joinChat(chat.id)
+      return () => leaveChat(chat.id)
+    }
+  }, [chat.id, joinChat, leaveChat])
 
   // Auto scroll to bottom when new messages arrive
   const scrollToBottom = useCallback((smooth = true) => {
@@ -75,13 +89,13 @@ export function ChatContainer({
     
     // Load more messages when near top
     if (scrollTop < 100 && !isLoading) {
-      onLoadMoreMessages()
+      // TODO: Implement load more messages
     }
-  }, [isLoading, onLoadMoreMessages])
+  }, [isLoading])
 
   // Auto scroll on new messages (only if user is near bottom)
   useEffect(() => {
-    if (messages.length > 0) {
+    if (chatMessages.length > 0) {
       const scrollArea = scrollAreaRef.current
       if (scrollArea) {
         const { scrollTop, scrollHeight, clientHeight } = scrollArea
@@ -93,7 +107,7 @@ export function ChatContainer({
         }
       }
     }
-  }, [messages, scrollToBottom])
+  }, [chatMessages, scrollToBottom])
 
   // Scroll to bottom on initial load
   useEffect(() => {
@@ -172,23 +186,57 @@ export function ChatContainer({
     }
   }
 
-  const handleSendMessage = (content: string, attachments?: File[]) => {
+  const handleSendMessage = async (content: string, attachments?: File[]) => {
     // Clear reply state after sending
     if (replyingTo) {
       setReplyingTo(null)
     }
     
-    onSendMessage(content, attachments)
+    // Create message object
+    const messageData = {
+      senderId: currentUser.id,
+      sender: currentUser,
+      content,
+      type: 'text' as const,
+      status: 'sending' as const,
+      attachments: [], // TODO: Handle file uploads
+      reactions: [],
+      isEdited: false,
+      isDeleted: false,
+      chatId: chat.id
+    }
+    
+    sendMessage(chat.id, messageData)
   }
 
   const handleReply = (message: Message) => {
     setReplyingTo(message)
-    onReplyToMessage(message)
   }
 
   const handleEdit = (message: Message) => {
     setEditingMessage(message)
-    // Focus footer input with message content for editing
+  }
+
+  const handleDeleteMessage = (messageId: string) => {
+    deleteMessage(chat.id, messageId)
+  }
+
+  const handleReactToMessage = (messageId: string, emoji: string) => {
+    // TODO: Implement reactions
+    console.log('React to message:', messageId, emoji)
+  }
+
+  const handleStarMessage = (messageId: string) => {
+    // TODO: Implement starring
+    console.log('Star message:', messageId)
+  }
+
+  const handleTypingStart = () => {
+    sendTyping(chat.id, true)
+  }
+
+  const handleTypingStop = () => {
+    sendTyping(chat.id, false)
   }
 
   const handleCancelReply = () => {
@@ -199,7 +247,7 @@ export function ChatContainer({
     setEditingMessage(null)
   }
 
-  const messageGroups = groupMessagesByDate(messages)
+  const messageGroups = groupMessagesByDate(chatMessages)
 
   return (
     <div className={cn('flex flex-col h-full bg-white dark:bg-gray-900', className)}>
@@ -250,9 +298,9 @@ export function ChatContainer({
                         isGrouped={message.isGrouped}
                         onReply={handleReply}
                         onEdit={handleEdit}
-                        onDelete={onDeleteMessage}
-                        onReact={onReactToMessage}
-                        onStar={onStarMessage}
+                        onDelete={handleDeleteMessage}
+                        onReact={handleReactToMessage}
+                        onStar={handleStarMessage}
                       />
                     </div>
                   )
@@ -261,9 +309,9 @@ export function ChatContainer({
             ))}
 
             {/* Typing indicator */}
-            {typingUsers.length > 0 && (
+            {chatTypingUsers.length > 0 && (
               <div className="px-4">
-                <TypingIndicator users={typingUsers} />
+                <TypingIndicator users={chatTypingUsers} />
               </div>
             )}
 
@@ -314,14 +362,21 @@ export function ChatContainer({
       {/* Chat Footer */}
       <ChatFooter
         onSendMessage={handleSendMessage}
-        onTypingStart={onTypingStart}
-        onTypingStop={onTypingStop}
+        onTypingStart={handleTypingStart}
+        onTypingStop={handleTypingStop}
         replyingTo={replyingTo}
         editingMessage={editingMessage}
         onCancelReply={handleCancelReply}
         onCancelEdit={handleCancelEdit}
         className="border-t border-gray-200 dark:border-gray-700"
       />
+
+      {/* Connection Status */}
+      {connectionQuality === 'offline' && (
+        <div className="absolute top-16 left-4 right-4 z-10">
+          <ConnectionStatus showDetails={false} />
+        </div>
+      )}
     </div>
   )
 }

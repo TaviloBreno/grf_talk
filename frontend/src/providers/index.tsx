@@ -4,6 +4,7 @@ import React from 'react'
 import { ThemeProvider } from './theme-provider'
 import { AuthProvider } from './auth-provider'
 import { ToastProvider } from './toast-provider'
+import { WebSocketProvider } from './websocket'
 
 interface ProvidersProps {
   children: React.ReactNode
@@ -18,9 +19,11 @@ export function Providers({ children }: ProvidersProps) {
       disableTransitionOnChange
     >
       <AuthProvider>
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <WebSocketProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
+        </WebSocketProvider>
       </AuthProvider>
     </ThemeProvider>
   )

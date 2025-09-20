@@ -5,6 +5,8 @@ export interface User {
   name: string
   avatar?: string
   role: 'user' | 'admin'
+  isOnline?: boolean
+  lastSeen?: Date
   createdAt: Date
   updatedAt: Date
 }
