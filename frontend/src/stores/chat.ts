@@ -20,6 +20,7 @@ interface ChatState {
   // Core data
   chats: Chat[]
   activeChat: Chat | null
+  selectedChatId: string | null
   messageCache: MessageCache
   
   // UI state
@@ -39,6 +40,7 @@ interface ChatActions {
   // Chat management
   setChats: (chats: Chat[]) => void
   setActiveChat: (chat: Chat | null) => void
+  selectChat: (chatId: string) => void
   updateChat: (chatId: string, updates: Partial<Chat>) => void
   
   // Message management
@@ -73,6 +75,7 @@ export const useChatStore = create<ChatStore>()(
       // Initial state
       chats: [],
       activeChat: null,
+      selectedChatId: null,
       messageCache: {},
       isLoading: false,
       error: null,
@@ -88,6 +91,12 @@ export const useChatStore = create<ChatStore>()(
 
       setActiveChat: (chat: Chat | null) => {
         set({ activeChat: chat })
+        get().updateActivity()
+      },
+
+      selectChat: (chatId: string) => {
+        const chat = get().chats.find(c => c.id === chatId)
+        set({ selectedChatId: chatId, activeChat: chat || null })
         get().updateActivity()
       },
 

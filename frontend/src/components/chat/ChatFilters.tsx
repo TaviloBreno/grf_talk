@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
+import { useChatStore } from '@/stores/chat'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -45,12 +46,11 @@ interface ChatFilters {
 }
 
 interface ChatFiltersProps {
-  chats: Chat[]
-  onFiltersChange: (filteredChats: Chat[]) => void
   className?: string
 }
 
-export function ChatFilters({ chats, onFiltersChange, className }: ChatFiltersProps) {
+export function ChatFilters({ className }: ChatFiltersProps) {
+  const { chats } = useChatStore()
   const [filters, setFilters] = useState<ChatFilters>({
     search: '',
     type: 'all',
@@ -138,8 +138,6 @@ export function ChatFilters({ chats, onFiltersChange, className }: ChatFiltersPr
 
   // Update filtered chats when filters change
   useMemo(() => {
-    onFiltersChange(filteredChats)
-    
     // Count active filters
     let count = 0
     if (filters.search.trim()) count++
@@ -150,7 +148,7 @@ export function ChatFilters({ chats, onFiltersChange, className }: ChatFiltersPr
     if (filters.showArchived) count++
     
     setActiveFiltersCount(count)
-  }, [filteredChats, onFiltersChange, filters])
+  }, [filteredChats, filters])
 
   const updateFilter = <K extends keyof ChatFilters>(
     key: K,
