@@ -17,24 +17,21 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useChatStore } from '@/stores/chat-store'
 import { useAuthStore } from '@/stores/auth-store'
+import { NewChatDialog } from '@/components/chat/NewChatDialog'
 import type { Chat } from '@/types/chat'
 
 interface LeftSideProps {
   isCollapsed?: boolean
-  onNewChat?: () => void
 }
 
-export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
+export function LeftSide({ isCollapsed = false }: LeftSideProps) {
   const { user } = useAuthStore()
   const { 
     chatList, 
     activeChat, 
     setActiveChat, 
     isLoading,
-    loadChats,
-    searchQuery,
-    setSearchQuery,
-    searchResults
+    loadChats
   } = useChatStore()
   
   const [localSearchQuery, setLocalSearchQuery] = useState('')
@@ -43,30 +40,33 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
   // Load chats on component mount
   useEffect(() => {
     if (user) {
-      fetchChats()
+      loadChats()
     }
-  }, [user, fetchChats])
+  }, [user, loadChats])
 
   // Filter chats based on search query
   useEffect(() => {
-    if (searchQuery.trim()) {
-      const filtered = searchChats(searchQuery)
+    if (localSearchQuery.trim()) {
+      const filtered = chatList.filter(chat => 
+        chat.title.toLowerCase().includes(localSearchQuery.toLowerCase()) ||
+        chat.description?.toLowerCase().includes(localSearchQuery.toLowerCase())
+      )
       setFilteredChats(filtered)
     } else {
-      setFilteredChats(chats)
+      setFilteredChats(chatList)
     }
-  }, [searchQuery, chats, searchChats])
+  }, [localSearchQuery, chatList])
 
   const handleChatSelect = (chat: Chat) => {
-    setActiveChat(chat.id)
+    setActiveChat(chat)
   }
 
   const handleNewChat = () => {
-    onNewChat?.()
+    // The dialog will handle the new chat creation
   }
 
-  const formatLastMessageTime = (timestamp: string) => {
-    const date = new Date(timestamp)
+  const formatLastMessageTime = (timestamp: Date | string) => {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
     const now = new Date()
     const diffInHours = Math.abs(now.getTime() - date.getTime()) / 36e5
 
@@ -85,21 +85,21 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
   }
 
   const getParticipantName = (chat: Chat) => {
-    if (chat.type === 'group') {
-      return chat.name || 'Grupo sem nome'
+    if (chat.type === 'group' || chat.type === 'channel') {
+      return chat.title || 'Grupo sem nome'
     }
     
-    // For direct chats, find the other participant
-    const otherParticipant = chat.participants?.find(p => p.userId !== user?.id)
+    // For private chats, find the other participant
+    const otherParticipant = chat.participants?.find((p: any) => p.userId !== user?.id)
     return otherParticipant?.user?.name || 'Usuário'
   }
 
   const getParticipantAvatar = (chat: Chat) => {
-    if (chat.type === 'group') {
-      return chat.avatar
+    if (chat.type === 'group' || chat.type === 'channel') {
+      return undefined // Groups don't have avatar in current schema
     }
     
-    const otherParticipant = chat.participants?.find(p => p.userId !== user?.id)
+    const otherParticipant = chat.participants?.find((p: any) => p.userId !== user?.id)
     return otherParticipant?.user?.avatar
   }
 
@@ -114,22 +114,38 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
       ? `${chat.lastMessage.content.substring(0, 50)}...`
       : chat.lastMessage.content
 
-    return chat.type === 'group' 
+    return (chat.type === 'group' || chat.type === 'channel')
       ? `${senderName}: ${messageText}`
       : messageText
+  }
+
+  // Calculate unread count (simplified - would need real implementation)
+  const getUnreadCount = (chat: Chat) => {
+    // This would need to be calculated based on lastReadAt vs messages
+    // For now, return 0 as placeholder
+    return 0
+  }
+
+  // Check if chat is pinned (placeholder - would need real implementation)
+  const isChatPinned = (chat: Chat) => {
+    // This would need to be stored in user preferences or chat metadata
+    return false
   }
 
   if (isCollapsed) {
     return (
       <div className="w-16 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col items-center py-4 space-y-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={handleNewChat}
-          className="h-10 w-10"
-        >
-          <Plus className="h-5 w-5" />
-        </Button>
+        <NewChatDialog
+          trigger={
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10"
+            >
+              <Plus className="h-5 w-5" />
+            </Button>
+          }
+        />
         
         <div className="flex-1 flex flex-col space-y-2 overflow-y-auto">
           {filteredChats.slice(0, 8).map((chat) => (
@@ -140,7 +156,7 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
               onClick={() => handleChatSelect(chat)}
               className={cn(
                 'h-10 w-10 relative',
-                activeChat === chat.id && 'bg-blue-100 dark:bg-blue-900'
+                activeChat?.id === chat.id && 'bg-blue-100 dark:bg-blue-900'
               )}
             >
               <Avatar className="h-8 w-8">
@@ -149,12 +165,12 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
                   {getParticipantName(chat).charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              {chat.unreadCount > 0 && (
+              {getUnreadCount(chat) > 0 && (
                 <Badge
                   variant="destructive"
                   className="absolute -top-1 -right-1 h-4 w-4 flex items-center justify-center p-0 text-xs"
                 >
-                  {chat.unreadCount}
+                  {getUnreadCount(chat)}
                 </Badge>
               )}
             </Button>
@@ -172,14 +188,17 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Conversas
           </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNewChat}
-            className="h-8 w-8"
-          >
-            <Plus className="h-4 w-4" />
-          </Button>
+          <NewChatDialog
+            trigger={
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            }
+          />
         </div>
         
         {/* Search */}
@@ -187,8 +206,8 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Buscar conversas..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={localSearchQuery}
+            onChange={(e) => setLocalSearchQuery(e.target.value)}
             className="pl-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
           />
         </div>
@@ -202,7 +221,7 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
           </div>
         ) : filteredChats.length === 0 ? (
           <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-            {searchQuery ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
+            {localSearchQuery ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
           </div>
         ) : (
           <div className="py-2">
@@ -213,7 +232,7 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
                 className={cn(
                   'flex items-center p-3 mx-2 rounded-lg cursor-pointer transition-colors',
                   'hover:bg-gray-50 dark:hover:bg-gray-800',
-                  activeChat === chat.id && 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
+                  activeChat?.id === chat.id && 'bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500'
                 )}
               >
                 {/* Avatar */}
@@ -224,7 +243,7 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
                       {getParticipantName(chat).charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  {chat.type === 'group' && (
+                  {(chat.type === 'group' || chat.type === 'channel') && (
                     <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-green-500 rounded-full flex items-center justify-center">
                       <MessageCircle className="h-2 w-2 text-white" />
                     </div>
@@ -236,7 +255,7 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
                   <div className="flex items-center justify-between">
                     <h3 className={cn(
                       'font-medium text-sm truncate',
-                      chat.unreadCount > 0 
+                      getUnreadCount(chat) > 0 
                         ? 'text-gray-900 dark:text-white' 
                         : 'text-gray-700 dark:text-gray-300'
                     )}>
@@ -248,7 +267,7 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
                           {formatLastMessageTime(chat.lastMessage.createdAt)}
                         </span>
                       )}
-                      {chat.isPinned && (
+                      {isChatPinned(chat) && (
                         <Pin className="h-3 w-3 text-blue-500" />
                       )}
                     </div>
@@ -257,7 +276,7 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
                   <div className="flex items-center justify-between mt-1">
                     <p className={cn(
                       'text-sm truncate',
-                      chat.unreadCount > 0 
+                      getUnreadCount(chat) > 0 
                         ? 'text-gray-700 dark:text-gray-300' 
                         : 'text-gray-500 dark:text-gray-400'
                     )}>
@@ -265,12 +284,12 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
                     </p>
                     
                     <div className="flex items-center space-x-1">
-                      {chat.unreadCount > 0 && (
+                      {getUnreadCount(chat) > 0 && (
                         <Badge
                           variant="destructive"
                           className="h-5 w-5 flex items-center justify-center p-0 text-xs"
                         >
-                          {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+                          {getUnreadCount(chat) > 99 ? '99+' : getUnreadCount(chat)}
                         </Badge>
                       )}
                       
@@ -290,7 +309,7 @@ export function LeftSide({ isCollapsed = false, onNewChat }: LeftSideProps) {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>
                             <Pin className="mr-2 h-4 w-4" />
-                            {chat.isPinned ? 'Desafixar' : 'Fixar'}
+                            {isChatPinned(chat) ? 'Desafixar' : 'Fixar'}
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Archive className="mr-2 h-4 w-4" />

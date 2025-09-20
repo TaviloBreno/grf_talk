@@ -29,13 +29,13 @@ import { useChatStore } from '@/stores/chat-store'
 import { useTheme } from 'next-themes'
 
 interface HeaderProps {
-  onMenuToggle?: () => void
+  onToggleSidebar?: () => void
+  sidebarCollapsed?: boolean
   onSearchChange?: (query: string) => void
 }
 
-export function Header({ onMenuToggle, onSearchChange }: HeaderProps) {
+export function Header({ onToggleSidebar, sidebarCollapsed, onSearchChange }: HeaderProps) {
   const { user, logout } = useAuthStore()
-  const { toggleSidebar, sidebarCollapsed } = useChatStore()
   const { theme, setTheme } = useTheme()
   const [notifications] = useState([
     { id: 1, message: 'Nova mensagem de João', unread: true },
@@ -51,8 +51,7 @@ export function Header({ onMenuToggle, onSearchChange }: HeaderProps) {
   }
 
   const handleMenuToggle = () => {
-    toggleSidebar()
-    onMenuToggle?.()
+    onToggleSidebar?.()
   }
 
   const handleLogout = async () => {
