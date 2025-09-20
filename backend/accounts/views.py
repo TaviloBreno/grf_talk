@@ -38,8 +38,12 @@ class SignInView(APIView, Authentication):
         access_token = refresh.access_token
         
         return Response({
-            'user': serializer.data,
-            'token': str(access_token)
+            'success': True,
+            'data': {
+                'user': serializer.data,
+                'accessToken': str(access_token),
+                'refreshToken': str(refresh)
+            }
         })
 
 
@@ -72,8 +76,12 @@ class SignUpView(APIView, Authentication):
         access_token = refresh.access_token
         
         return Response({
-            'user': serializer.data,
-            'token': str(access_token)
+            'success': True,
+            'data': {
+                'user': serializer.data,
+                'accessToken': str(access_token),
+                'refreshToken': str(refresh)
+            }
         })
 
 
