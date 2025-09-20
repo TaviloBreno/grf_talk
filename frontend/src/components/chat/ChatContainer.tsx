@@ -9,7 +9,8 @@ import ChatHeader from './ChatHeader'
 import ChatFooter from './ChatFooter'
 import MessageItem from './MessageItem'
 import TypingIndicator from './TypingIndicator'
-import type { Chat, Message, User, TypingUser } from '@/types/chat'
+import type { Chat, Message, TypingUser } from '@/types/chat'
+import type { User } from '@/types'
 
 interface ChatContainerProps {
   chat: Chat

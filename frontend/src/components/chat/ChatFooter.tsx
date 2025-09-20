@@ -48,7 +48,12 @@ interface AttachmentPreview {
 export function ChatFooter({
   onSendMessage,
   onSendAudio,
-  onTyping,
+  onTypingStart,
+  onTypingStop,
+  replyingTo,
+  editingMessage,
+  onCancelReply,
+  onCancelEdit,
   disabled = false,
   placeholder = 'Digite uma mensagem...',
   maxLength = 1000,
@@ -79,8 +84,8 @@ export function ChatFooter({
 
   // Handle typing indicator
   useEffect(() => {
-    if (onTyping && message.trim()) {
-      onTyping(true)
+    if (onTypingStart && message.trim()) {
+      onTypingStart()
       
       // Clear existing timeout
       if (typingTimeoutRef.current) {
@@ -89,10 +94,10 @@ export function ChatFooter({
       
       // Set new timeout to stop typing indicator
       typingTimeoutRef.current = setTimeout(() => {
-        onTyping(false)
+        onTypingStop?.()
       }, 1000)
-    } else if (onTyping) {
-      onTyping(false)
+    } else if (onTypingStop) {
+      onTypingStop()
     }
 
     return () => {
@@ -100,16 +105,16 @@ export function ChatFooter({
         clearTimeout(typingTimeoutRef.current)
       }
     }
-  }, [message, onTyping])
+  }, [message, onTypingStart, onTypingStop])
 
   // Clean up typing indicator on unmount
   useEffect(() => {
     return () => {
-      if (onTyping) {
-        onTyping(false)
+      if (onTypingStop) {
+        onTypingStop()
       }
     }
-  }, [onTyping])
+  }, [onTypingStop])
 
   const handleSendMessage = async () => {
     const trimmedMessage = message.trim()
