@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
 import { User, LoginCredentials, RegisterCredentials } from '@/types'
 
@@ -30,21 +30,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const { user, isLoading, login, logout, register, checkAuth } = useAuthStore()
   const [mounted, setMounted] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-    checkAuth()
-  }, [checkAuth])
-
-  if (!mounted) {
-    return null
-  }
-
-  const value: AuthContextType = {
+  // useMemo deve ser chamado sempre, antes de qualquer retorno condicional
+  const value: AuthContextType = useMemo(() => ({
     user,
     isLoading,
     login,
     logout,
     register,
+  }), [user, isLoading, login, logout, register])
+
+  useEffect(() => {
+    setMounted(true)
+    checkAuth()
+  }, []) // Removido checkAuth da dependência para evitar loops
+
+  if (!mounted) {
+    return null
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

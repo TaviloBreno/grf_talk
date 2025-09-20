@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 export default function ChatPage() {
   const router = useRouter()
   const { isAuthenticated, user } = useAuthStore()
-  const { chats, selectedChat, selectChat } = useChatStore()
+  const { chats, activeChat, setActiveChat } = useChatStore()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -33,12 +33,16 @@ export default function ChatPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated (with debounce to avoid loops)
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/auth/signin')
-    }
-  }, [isAuthenticated, router])
+    const timeoutId = setTimeout(() => {
+      if (!isAuthenticated && !user) {
+        router.push('/auth/signin')
+      }
+    }, 100) // Small delay to avoid immediate redirects
+
+    return () => clearTimeout(timeoutId)
+  }, [isAuthenticated, user, router])
 
   if (!isAuthenticated) {
     return (
@@ -109,7 +113,7 @@ export default function ChatPage() {
           {/* Mobile Chat Area */}
           {!sidebarOpen && (
             <div className="flex-1 overflow-hidden">
-              {selectedChat ? (
+              {activeChat ? (
                 <ChatContainer />
               ) : (
                 <div className="flex items-center justify-center h-full">
@@ -197,7 +201,7 @@ export default function ChatPage() {
               </div>
 
               {/* Chat Content */}
-              {selectedChat ? (
+              {activeChat ? (
                 <ChatContainer />
               ) : (
                 <div className="flex items-center justify-center h-full">

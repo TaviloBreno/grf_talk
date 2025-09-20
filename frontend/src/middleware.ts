@@ -7,8 +7,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/a
 
 // Route configurations
 const AUTH_ROUTES = [
-  '/auth/login',
-  '/auth/register', 
+  '/auth/signin',
+  '/auth/signup', 
   '/auth/forgot-password',
   '/auth/reset-password',
 ]
@@ -16,6 +16,7 @@ const AUTH_ROUTES = [
 const PROTECTED_ROUTES = [
   '/dashboard',
   '/profile',
+  '/chat',
   '/chats',
   '/settings',
 ]
@@ -137,7 +138,7 @@ export async function middleware(request: NextRequest) {
       const user = await verifyJWT(accessToken) || await verifyTokenWithAPI(accessToken)
       
       if (user) {
-        const redirectUrl = request.nextUrl.searchParams.get('redirect') || '/dashboard'
+        const redirectUrl = request.nextUrl.searchParams.get('redirect') || '/chat'
         return NextResponse.redirect(new URL(redirectUrl, request.url))
       }
     }
@@ -178,7 +179,7 @@ export async function middleware(request: NextRequest) {
       }
 
       // No valid token, redirect to login
-      const loginUrl = new URL('/auth/login', request.url)
+      const loginUrl = new URL('/auth/signin', request.url)
       loginUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(loginUrl)
     }
@@ -225,7 +226,7 @@ export async function middleware(request: NextRequest) {
       response.cookies.delete('refresh_token')
       response.cookies.delete('user_data')
 
-      const loginUrl = new URL('/auth/login', request.url)
+      const loginUrl = new URL('/auth/signin', request.url)
       loginUrl.searchParams.set('redirect', pathname)
       loginUrl.searchParams.set('expired', 'true')
       return NextResponse.redirect(loginUrl)
@@ -247,7 +248,7 @@ export async function middleware(request: NextRequest) {
       }
       
       if (userRole !== 'admin') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
+        return NextResponse.redirect(new URL('/chat', request.url))
       }
     }
 

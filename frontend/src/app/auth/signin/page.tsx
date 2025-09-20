@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Eye, EyeOff, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react'
@@ -28,6 +28,7 @@ export default function SignInPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login, isLoading: authLoading, isAuthenticated } = useAuthStore()
+  const hasRedirected = useRef(false)
   
   const [formData, setFormData] = useState<SignInFormData>({
     email: '',
@@ -41,14 +42,15 @@ export default function SignInPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  // Verificar se já está autenticado
+  // Verificar se já está autenticado (apenas uma vez)
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !hasRedirected.current) {
+      hasRedirected.current = true
       router.push('/chat')
     }
   }, [isAuthenticated, router])
 
-  // Verificar mensagens da URL
+  // Verificar mensagens da URL (apenas uma vez)
   useEffect(() => {
     const message = searchParams.get('message')
     if (message === 'registered') {
@@ -56,7 +58,7 @@ export default function SignInPage() {
     } else if (message === 'logout') {
       setSuccessMessage('Você saiu da sua conta com sucesso.')
     }
-  }, [searchParams])
+  }, []) // Removido searchParams para evitar re-renders
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
