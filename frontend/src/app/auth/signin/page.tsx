@@ -44,9 +44,16 @@ export default function SignInPage() {
 
   // Verificar se já está autenticado (apenas uma vez)
   useEffect(() => {
+    console.log('🔍 useEffect: Verificando autenticação, isAuthenticated:', isAuthenticated, 'hasRedirected:', hasRedirected.current)
     if (isAuthenticated && !hasRedirected.current) {
+      console.log('🚀 useEffect: Redirecionando para /chat')
       hasRedirected.current = true
-      router.push('/chat')
+      
+      // Usar window.location em vez de router.push para forçar a navegação
+      setTimeout(() => {
+        console.log('🌐 useEffect: Executando window.location.href = "/chat"')
+        window.location.href = '/chat'
+      }, 100)
     }
   }, [isAuthenticated, router])
 
@@ -106,19 +113,22 @@ export default function SignInPage() {
       return
     }
 
+    console.log('📋 Form: Iniciando submit do login')
     setIsLoading(true)
     setSubmitError(null)
     
     try {
+      console.log('🔐 Form: Chamando login do store')
       await login({
         email: formData.email.trim(),
         password: formData.password
       })
       
+      console.log('✅ Form: Login concluído com sucesso')
       // O redirecionamento será feito pelo useEffect quando isAuthenticated mudar
       
     } catch (error: any) {
-      console.error('Erro ao fazer login:', error)
+      console.error('❌ Form: Erro ao fazer login:', error)
       setSubmitError(
         error.message || 'Credenciais inválidas. Verifique seus dados.'
       )

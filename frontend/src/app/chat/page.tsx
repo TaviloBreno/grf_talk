@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth-store'
 import { useChatStore } from '@/stores/chat'
 import { ChatContainer } from '@/components/chat/ChatContainer'
 import { ChatList } from '@/components/chat/ChatList'
@@ -14,10 +14,13 @@ import { cn } from '@/lib/utils'
 
 export default function ChatPage() {
   const router = useRouter()
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, user, isLoading } = useAuthStore()
   const { chats, activeChat, setActiveChat } = useChatStore()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  console.log('🏠 Chat Page: Estado atual:', { isAuthenticated, user: !!user, isLoading, isInitialized })
 
   // Check mobile screen size
   useEffect(() => {
@@ -33,21 +36,42 @@ export default function ChatPage() {
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  // Redirect if not authenticated (with debounce to avoid loops)
+  // Initialize and check authentication
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
+    const initializeAuth = async () => {
+      // Aguardar um pouco para o Zustand persist carregar
+      await new Promise(resolve => setTimeout(resolve, 100))
+      setIsInitialized(true)
+      
+      console.log('🔍 Chat Page: Verificando autenticação após inicialização')
+      
       if (!isAuthenticated && !user) {
+        console.log('❌ Chat Page: Não autenticado, redirecionando para login')
         router.push('/auth/signin')
+      } else {
+        console.log('✅ Chat Page: Usuário autenticado, carregando chat')
       }
-    }, 100) // Small delay to avoid immediate redirects
+    }
 
-    return () => clearTimeout(timeoutId)
-  }, [isAuthenticated, user, router])
+    initializeAuth()
+  }, [])
 
-  if (!isAuthenticated) {
+  // Mostrar loading enquanto não inicializou ou está carregando
+  if (!isInitialized || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="ml-2">Carregando...</span>
+      </div>
+    )
+  }
+
+  // Se não está autenticado após inicialização, mostrar loading (será redirecionado)
+  if (!isAuthenticated && !user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="ml-2">Redirecionando...</span>
       </div>
     )
   }
