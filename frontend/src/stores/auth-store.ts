@@ -10,6 +10,19 @@ import {
   refreshTokenAction,
 } from '@/actions/auth-actions'
 
+// Additional types for account management
+interface UpdateProfileData {
+  name?: string
+  email?: string
+  avatar?: string
+}
+
+interface ChangePasswordData {
+  currentPassword: string
+  newPassword: string
+  confirmPassword: string
+}
+
 // Auth store state interface
 interface AuthState {
   // State
@@ -24,6 +37,8 @@ interface AuthState {
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
   refreshAuth: () => Promise<void>
+  updateProfile: (data: UpdateProfileData) => Promise<void>
+  changePassword: (data: ChangePasswordData) => Promise<void>
   clearError: () => void
   setUser: (user: User | null) => void
   setLoading: (loading: boolean) => void
@@ -228,6 +243,66 @@ export const useAuthStore = create<AuthState>()(
         // The actual token storage is handled by server actions
         console.log('Tokens updated via store')
       },
+
+      // Update profile
+      updateProfile: async (data: UpdateProfileData) => {
+        try {
+          set({ isLoading: true, error: null })
+
+          // Simulate API call - in real app this would call an updateProfile action
+          await new Promise(resolve => setTimeout(resolve, 1000))
+
+          // Update user data locally
+          const currentUser = get().user
+          if (currentUser) {
+            const updatedUser = {
+              ...currentUser,
+              ...data,
+            }
+            set({
+              user: updatedUser,
+              isLoading: false,
+              error: null,
+            })
+          } else {
+            throw new Error('Usuário não encontrado')
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar perfil'
+          set({
+            isLoading: false,
+            error: errorMessage,
+          })
+          throw error
+        }
+      },
+
+      // Change password
+      changePassword: async (data: ChangePasswordData) => {
+        try {
+          set({ isLoading: true, error: null })
+
+          // Validate passwords match
+          if (data.newPassword !== data.confirmPassword) {
+            throw new Error('Senhas não coincidem')
+          }
+
+          // Simulate API call - in real app this would call a changePassword action
+          await new Promise(resolve => setTimeout(resolve, 1000))
+
+          set({
+            isLoading: false,
+            error: null,
+          })
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Erro ao alterar senha'
+          set({
+            isLoading: false,
+            error: errorMessage,
+          })
+          throw error
+        }
+      },
     }),
     {
       name: 'auth-store',
@@ -275,6 +350,8 @@ export const useAuthActions = () => {
     logout: store.logout,
     checkAuth: store.checkAuth,
     refreshAuth: store.refreshAuth,
+    updateProfile: store.updateProfile,
+    changePassword: store.changePassword,
     clearError: store.clearError,
     setUser: store.setUser,
     setLoading: store.setLoading,
