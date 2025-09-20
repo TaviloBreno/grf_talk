@@ -9,6 +9,8 @@ import ChatHeader from './ChatHeader'
 import ChatFooter from './ChatFooter'
 import MessageItem from './MessageItem'
 import TypingIndicator from './TypingIndicator'
+import MessageSearch from './MessageSearch'
+import ChatSettingsDialog from './ChatSettingsDialog'
 import ConnectionStatus from '@/components/ui/connection-status'
 import { useChatStore, useChatWebSocket } from '@/stores/chat'
 import { useWebSocket } from '@/providers/websocket'
@@ -247,16 +249,39 @@ export function ChatContainer({
     setEditingMessage(null)
   }
 
+  const handleMessageSelect = (message: Message) => {
+    // Scroll to the selected message
+    const messageElement = document.getElementById(`message-${message.id}`)
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // Highlight the message briefly
+      messageElement.classList.add('highlight')
+      setTimeout(() => messageElement.classList.remove('highlight'), 2000)
+    }
+  }
+
   const messageGroups = groupMessagesByDate(chatMessages)
 
   return (
     <div className={cn('flex flex-col h-full bg-white dark:bg-gray-900', className)}>
       {/* Chat Header */}
-      <ChatHeader 
-        chat={chat}
-        currentUser={currentUser}
-        className="border-b border-gray-200 dark:border-gray-700"
-      />
+      <div className="border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4">
+          <ChatHeader 
+            chat={chat}
+            currentUser={currentUser}
+            className="flex-1"
+          />
+          
+          <div className="flex items-center gap-2">
+            <MessageSearch 
+              chatId={chat.id}
+              onMessageSelect={handleMessageSelect}
+            />
+            <ChatSettingsDialog chatId={chat.id} />
+          </div>
+        </div>
+      </div>
 
       {/* Messages Area */}
       <div className="flex-1 relative overflow-hidden">

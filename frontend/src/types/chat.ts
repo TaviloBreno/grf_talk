@@ -35,6 +35,7 @@ export interface Chat {
   participants: ChatParticipant[]
   messages: Message[]
   lastMessage?: Message
+  unreadCount: number
   isActive: boolean
   isPinned?: boolean
   isStarred?: boolean

@@ -121,10 +121,10 @@
   }
 }
 
-/* Custom Scrollbar Styles */
+/* Custom scrollbar styles */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -133,12 +133,11 @@
 
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
-  border-radius: 3px;
-  transition: background 0.2s ease;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--border) / 0.8);
+  background: hsl(var(--muted-foreground));
 }
 
 /* Firefox scrollbar */
@@ -147,22 +146,41 @@
   scrollbar-color: hsl(var(--border)) transparent;
 }
 
-/* Custom scroll behavior */
+/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
 }
 
-/* Chat scroll optimization */
-.chat-messages {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--border)) transparent;
+/* Chat-specific styles */
+.highlight {
+  animation: highlightFade 2s ease-out;
 }
 
-.chat-messages::-webkit-scrollbar {
-  width: 4px;
+@keyframes highlightFade {
+  0% {
+    background-color: hsl(var(--accent));
+    transform: scale(1.02);
+  }
+  50% {
+    background-color: hsl(var(--accent));
+  }
+  100% {
+    background-color: transparent;
+    transform: scale(1);
+  }
 }
 
-.chat-messages::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 2px;
+/* Compact mode styles */
+.compact-mode .message-item {
+  padding: 0.25rem 0;
+}
+
+.compact-mode .message-content {
+  font-size: calc(var(--chat-font-size, 14px) - 1px);
+}
+
+/* Dynamic CSS variables for chat settings */
+:root {
+  --chat-font-size: 14px;
+  --message-spacing: 8px;
 }
