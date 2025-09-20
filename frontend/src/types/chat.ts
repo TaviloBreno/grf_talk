@@ -1,15 +1,39 @@
 import { User } from './index'
 
+// Contact related types
+export interface Contact {
+  id: string
+  name: string
+  avatar?: string
+  email?: string
+  phoneNumber?: string
+  status?: string
+  isOnline: boolean
+  lastSeen?: Date
+  isFavorite: boolean
+  isBlocked: boolean
+  userId: string
+  user?: User
+  createdAt: Date
+  updatedAt: Date
+}
+
 // Chat related types
 export interface Chat {
   id: string
   title: string
+  name?: string // For display purposes
+  avatar?: string // For display purposes
   description?: string
   type: 'private' | 'group' | 'channel'
   participants: ChatParticipant[]
   messages: Message[]
   lastMessage?: Message
   isActive: boolean
+  isPinned?: boolean
+  isStarred?: boolean
+  isMuted?: boolean
+  isArchived?: boolean
   settings: ChatSettings
   createdBy: string
   createdAt: Date

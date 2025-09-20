@@ -1,17 +1,35 @@
 'use client'
 
-import React, { useState } from 'react'
-import { ArrowLeft, User, Mail, Lock, Camera, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuthStore } from '@/stores/auth-store'
-import { useRouter } from 'next/navigation'
+import { 
+  ArrowLeft, 
+  CheckCircle, 
+  AlertCircle, 
+  User, 
+  Mail, 
+  Lock, 
+  Save,
+  Camera,
+  Bell,
+  Shield,
+  Palette,
+  Globe,
+  Monitor,
+  Sun,
+  Moon
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ProfileFormData {
@@ -24,6 +42,23 @@ interface PasswordFormData {
   currentPassword: string
   newPassword: string
   confirmPassword: string
+}
+
+interface PreferencesData {
+  theme: string
+  language: string
+  notifications: {
+    email: boolean
+    push: boolean
+    sound: boolean
+    desktop: boolean
+  }
+  privacy: {
+    showOnlineStatus: boolean
+    readReceipts: boolean
+    profileVisibility: string
+    lastSeenVisibility: string
+  }
 }
 
 interface FormErrors {
@@ -39,6 +74,8 @@ export default function AccountPage() {
   const router = useRouter()
   const { user, updateProfile, changePassword, isLoading } = useAuthStore()
 
+  const [activeTab, setActiveTab] = useState('profile')
+
   const [profileData, setProfileData] = useState<ProfileFormData>({
     name: user?.name || '',
     email: user?.email || '',
@@ -51,12 +88,51 @@ export default function AccountPage() {
     confirmPassword: ''
   })
 
+  const [preferencesData, setPreferencesData] = useState<PreferencesData>({
+    theme: 'system',
+    language: 'pt',
+    notifications: {
+      email: true,
+      push: true,
+      sound: true,
+      desktop: false
+    },
+    privacy: {
+      showOnlineStatus: true,
+      readReceipts: true,
+      profileVisibility: 'everyone',
+      lastSeenVisibility: 'everyone'
+    }
+  })
+
   const [errors, setErrors] = useState<FormErrors>({})
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('profile')
 
-  const validateProfileForm = (): boolean => {
+  // Update profile data when user changes
+  useEffect(() => {
+    if (user) {
+      setProfileData({
+        name: user.name || '',
+        email: user.email || '',
+        avatar: user.avatar || ''
+      })
+    }
+  }, [user])
+
+  // Auto-clear messages after 5 seconds
+  useEffect(() => {
+    if (successMessage || errorMessage) {
+      const timer = setTimeout(() => {
+        setSuccessMessage(null)
+        setErrorMessage(null)
+      }, 5000)
+
+      return () => clearTimeout(timer)
+    }
+  }, [successMessage, errorMessage])
+
+  const validateProfileForm = () => {
     const newErrors: FormErrors = {}
 
     if (!profileData.name.trim()) {
@@ -65,10 +141,9 @@ export default function AccountPage() {
       newErrors.name = 'Nome deve ter pelo menos 2 caracteres'
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!profileData.email.trim()) {
       newErrors.email = 'Email é obrigatório'
-    } else if (!emailRegex.test(profileData.email)) {
+    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
       newErrors.email = 'Email inválido'
     }
 
@@ -76,7 +151,7 @@ export default function AccountPage() {
     return Object.keys(newErrors).length === 0
   }
 
-  const validatePasswordForm = (): boolean => {
+  const validatePasswordForm = () => {
     const newErrors: FormErrors = {}
 
     if (!passwordData.currentPassword) {
@@ -131,6 +206,15 @@ export default function AccountPage() {
     clearMessages()
   }
 
+  const handlePreferencesChange = (section: keyof PreferencesData, field: string, value: any) => {
+    setPreferencesData(prev => ({
+      ...prev,
+      [section]: typeof prev[section] === 'object' && prev[section] !== null
+        ? { ...prev[section] as any, [field]: value }
+        : value
+    }))
+  }
+
   const clearMessages = () => {
     if (successMessage) setSuccessMessage(null)
     if (errorMessage) setErrorMessage(null)
@@ -182,6 +266,17 @@ export default function AccountPage() {
     }
   }
 
+  const handlePreferencesSubmit = async () => {
+    try {
+      // Simulate API call to save preferences
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      setSuccessMessage('Preferências salvas com sucesso!')
+    } catch (error: any) {
+      setErrorMessage('Erro ao salvar preferências')
+    }
+  }
+
   const getUserInitials = (name: string) => {
     return name
       .split(' ')
@@ -203,6 +298,14 @@ export default function AccountPage() {
         handleProfileInputChange('avatar', reader.result as string)
       }
       reader.readAsDataURL(file)
+    }
+  }
+
+  const getThemeIcon = (theme: string) => {
+    switch (theme) {
+      case 'light': return <Sun className="h-4 w-4" />
+      case 'dark': return <Moon className="h-4 w-4" />
+      default: return <Monitor className="h-4 w-4" />
     }
   }
 
@@ -246,9 +349,10 @@ export default function AccountPage() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">Perfil</TabsTrigger>
             <TabsTrigger value="security">Segurança</TabsTrigger>
+            <TabsTrigger value="preferences">Preferências</TabsTrigger>
           </TabsList>
 
           {/* Tab Perfil */}
@@ -428,6 +532,278 @@ export default function AccountPage() {
                 </form>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Tab Preferências */}
+          <TabsContent value="preferences" className="space-y-6">
+            {/* Aparência */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Aparência
+                </CardTitle>
+                <CardDescription>
+                  Personalize o tema e idioma da aplicação
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Tema */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Tema</Label>
+                    <p className="text-sm text-gray-500">
+                      Escolha entre tema claro, escuro ou automático
+                    </p>
+                  </div>
+                  <Select
+                    value={preferencesData.theme}
+                    onValueChange={(value) => handlePreferencesChange('theme', '', value)}
+                  >
+                    <SelectTrigger className="w-48">
+                      <div className="flex items-center gap-2">
+                        {getThemeIcon(preferencesData.theme)}
+                        <SelectValue />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">
+                        <div className="flex items-center gap-2">
+                          <Sun className="h-4 w-4" />
+                          Claro
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="dark">
+                        <div className="flex items-center gap-2">
+                          <Moon className="h-4 w-4" />
+                          Escuro
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="system">
+                        <div className="flex items-center gap-2">
+                          <Monitor className="h-4 w-4" />
+                          Automático
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                {/* Idioma */}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Idioma</Label>
+                    <p className="text-sm text-gray-500">
+                      Selecione o idioma da interface
+                    </p>
+                  </div>
+                  <Select
+                    value={preferencesData.language}
+                    onValueChange={(value) => handlePreferencesChange('language', '', value)}
+                  >
+                    <SelectTrigger className="w-48">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-4 w-4" />
+                        <SelectValue />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pt">Português</SelectItem>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="es">Español</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Notificações */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Notificações
+                </CardTitle>
+                <CardDescription>
+                  Configure como e quando receber notificações
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Notificações por Email</Label>
+                    <p className="text-sm text-gray-500">
+                      Receber notificações importantes por email
+                    </p>
+                  </div>
+                  <Switch
+                    checked={preferencesData.notifications.email}
+                    onCheckedChange={(checked) => 
+                      handlePreferencesChange('notifications', 'email', checked)
+                    }
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Notificações Push</Label>
+                    <p className="text-sm text-gray-500">
+                      Receber notificações push no navegador
+                    </p>
+                  </div>
+                  <Switch
+                    checked={preferencesData.notifications.push}
+                    onCheckedChange={(checked) => 
+                      handlePreferencesChange('notifications', 'push', checked)
+                    }
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Sons de Notificação</Label>
+                    <p className="text-sm text-gray-500">
+                      Reproduzir sons quando receber mensagens
+                    </p>
+                  </div>
+                  <Switch
+                    checked={preferencesData.notifications.sound}
+                    onCheckedChange={(checked) => 
+                      handlePreferencesChange('notifications', 'sound', checked)
+                    }
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Notificações Desktop</Label>
+                    <p className="text-sm text-gray-500">
+                      Mostrar notificações na área de trabalho
+                    </p>
+                  </div>
+                  <Switch
+                    checked={preferencesData.notifications.desktop}
+                    onCheckedChange={(checked) => 
+                      handlePreferencesChange('notifications', 'desktop', checked)
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Privacidade */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Privacidade
+                </CardTitle>
+                <CardDescription>
+                  Controle suas configurações de privacidade
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Mostrar Status Online</Label>
+                    <p className="text-sm text-gray-500">
+                      Permitir que outros vejam quando você está online
+                    </p>
+                  </div>
+                  <Switch
+                    checked={preferencesData.privacy.showOnlineStatus}
+                    onCheckedChange={(checked) => 
+                      handlePreferencesChange('privacy', 'showOnlineStatus', checked)
+                    }
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Confirmação de Leitura</Label>
+                    <p className="text-sm text-gray-500">
+                      Enviar confirmação quando ler mensagens
+                    </p>
+                  </div>
+                  <Switch
+                    checked={preferencesData.privacy.readReceipts}
+                    onCheckedChange={(checked) => 
+                      handlePreferencesChange('privacy', 'readReceipts', checked)
+                    }
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Visibilidade do Perfil</Label>
+                    <p className="text-sm text-gray-500">
+                      Quem pode ver suas informações de perfil
+                    </p>
+                  </div>
+                  <Select
+                    value={preferencesData.privacy.profileVisibility}
+                    onValueChange={(value) => 
+                      handlePreferencesChange('privacy', 'profileVisibility', value)
+                    }
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="everyone">Todos</SelectItem>
+                      <SelectItem value="contacts">Apenas Contatos</SelectItem>
+                      <SelectItem value="nobody">Ninguém</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label>Última Vez Visto</Label>
+                    <p className="text-sm text-gray-500">
+                      Quem pode ver quando você esteve online pela última vez
+                    </p>
+                  </div>
+                  <Select
+                    value={preferencesData.privacy.lastSeenVisibility}
+                    onValueChange={(value) => 
+                      handlePreferencesChange('privacy', 'lastSeenVisibility', value)
+                    }
+                  >
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="everyone">Todos</SelectItem>
+                      <SelectItem value="contacts">Apenas Contatos</SelectItem>
+                      <SelectItem value="nobody">Ninguém</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Botão Salvar Preferências */}
+            <div className="flex justify-end">
+              <Button onClick={handlePreferencesSubmit} disabled={isLoading}>
+                <Save className="mr-2 h-4 w-4" />
+                {isLoading ? 'Salvando...' : 'Salvar Preferências'}
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
