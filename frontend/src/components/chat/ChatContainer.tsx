@@ -27,6 +27,17 @@ export function ChatContainer({
       loadMessages(chat.id)
     }
   }, [chat?.id, loadMessages])
+
+  // Poll for new messages every 5 seconds when a chat is active
+  useEffect(() => {
+    if (!chat?.id) return
+
+    const interval = setInterval(() => {
+      loadMessages(chat.id)
+    }, 5000) // Check for new messages every 5 seconds
+
+    return () => clearInterval(interval)
+  }, [chat?.id, loadMessages])
   
   // Get messages for the active chat
   const chatMessages = chat?.id ? messages[chat.id] || [] : []

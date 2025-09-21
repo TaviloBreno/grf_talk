@@ -115,16 +115,20 @@ class ChatMessagesView(BaseView):
             message_data['attachment_id'] = attachment_id
         
         message = ChatMessage.objects.create(**message_data)
+        print(f"✅ DEBUG: Mensagem criada com ID {message.id} no chat {chat.id}")
         
         # Atualizar viewed_at do chat
         chat.viewed_at = timezone.now()
         chat.save()
+        print(f"✅ DEBUG: Chat {chat.id} atualizado")
         
         # Serializar mensagem criada
         serializer = ChatMessageSerializer(message, context={'request': request})
+        print(f"✅ DEBUG: Mensagem serializada: {serializer.data}")
         
         # Determinar usuário destinatário
         to_user = chat.to_user if chat.from_user.id == request.user.id else chat.from_user
+        print(f"✅ DEBUG: Usuário destinatário: {to_user.id} ({to_user.email})")
         
         # Emitir evento socket para o destinatário
         try:

@@ -266,7 +266,7 @@ export const useChatStore = create<ChatStoreState>()(
             const chatIndex = state.chatList.findIndex(chat => chat.id === chatId)
             if (chatIndex !== -1) {
               state.chatList[chatIndex].lastMessage = newMessage
-              state.chatList[chatIndex].updatedAt = newMessage.createdAt
+              state.chatList[chatIndex].updatedAt = newMessage.created_at
             }
             
             state.replyingTo = null
