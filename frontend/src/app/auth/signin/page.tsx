@@ -49,10 +49,10 @@ export default function SignInPage() {
       console.log('🚀 useEffect: Redirecionando para /chat')
       hasRedirected.current = true
       
-      // Usar window.location em vez de router.push para forçar a navegação
+      // Força o redirecionamento usando replace
       setTimeout(() => {
-        console.log('🌐 useEffect: Executando window.location.href = "/chat"')
-        window.location.href = '/chat'
+        console.log('⏰ useEffect: Executando redirecionamento após timeout')
+        router.replace('/chat')
       }, 100)
     }
   }, [isAuthenticated, router])
@@ -65,7 +65,7 @@ export default function SignInPage() {
     } else if (message === 'logout') {
       setSuccessMessage('Você saiu da sua conta com sucesso.')
     }
-  }, []) // Removido searchParams para evitar re-renders
+  }, [searchParams])
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {}
@@ -108,6 +108,12 @@ export default function SignInPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
+    
+    // Prevenir múltiplos submits
+    if (isLoading || authLoading) {
+      return
+    }
     
     if (!validateForm()) {
       return
@@ -125,6 +131,20 @@ export default function SignInPage() {
       })
       
       console.log('✅ Form: Login concluído com sucesso')
+      
+      // Verificar o estado após o login
+      setTimeout(() => {
+        const { isAuthenticated: newAuth } = useAuthStore.getState()
+        console.log('🔄 Form: Estado após login:', { newAuth })
+        
+        // Forçar redirecionamento se não acontecer automaticamente
+        if (newAuth && !hasRedirected.current) {
+          console.log('🚨 Form: Forçando redirecionamento manual')
+          hasRedirected.current = true
+          router.replace('/chat')
+        }
+      }, 200)
+      
       // O redirecionamento será feito pelo useEffect quando isAuthenticated mudar
       
     } catch (error: any) {

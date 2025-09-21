@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { useChatStore } from '@/stores/chat'
+import { useChatStore } from '@/stores/chat-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -50,7 +50,7 @@ interface ChatFiltersProps {
 }
 
 export function ChatFilters({ className }: ChatFiltersProps) {
-  const { chats } = useChatStore()
+  const { chatList } = useChatStore()
   const [filters, setFilters] = useState<ChatFilters>({
     search: '',
     type: 'all',
@@ -64,7 +64,7 @@ export function ChatFilters({ className }: ChatFiltersProps) {
 
   // Filter and sort chats based on current filters
   const filteredChats = useMemo(() => {
-    let result = [...chats]
+    let result = [...chatList]
 
     // Search filter
     if (filters.search.trim()) {
@@ -134,7 +134,7 @@ export function ChatFilters({ className }: ChatFiltersProps) {
     })
 
     return result
-  }, [chats, filters])
+  }, [chatList, filters])
 
   // Update filtered chats when filters change
   useMemo(() => {
@@ -246,8 +246,8 @@ export function ChatFilters({ className }: ChatFiltersProps) {
             <DropdownMenuSeparator />
             {(['all', 'unread', 'groups', 'direct', 'archived', 'starred', 'muted'] as ChatFilterType[]).map(type => {
               const Icon = getTypeIcon(type)
-              const count = type === 'all' ? chats.length : 
-                chats.filter(chat => {
+              const count = type === 'all' ? chatList.length :
+                chatList.filter(chat => {
                   switch (type) {
                     case 'unread': return chat.unreadCount && chat.unreadCount > 0
                     case 'groups': return chat.type === 'group'
@@ -353,7 +353,7 @@ export function ChatFilters({ className }: ChatFiltersProps) {
       {(filters.search || filters.type !== 'all' || activeFiltersCount > 0) && (
         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
           <span>
-            {filteredChats.length} de {chats.length} conversas
+            {filteredChats.length} de {chatList.length} conversas
           </span>
           {filters.search && (
             <Badge variant="outline" className="text-xs">

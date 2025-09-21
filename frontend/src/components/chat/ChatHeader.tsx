@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { useAuthStore } from '@/stores/auth-store'
+import { useChatStore } from '@/stores/chat-store'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -16,6 +17,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -42,6 +44,7 @@ export function ChatHeader({ onToggleSidebar, onNewChat, isMobile = false }: Cha
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const { user, logout } = useAuthStore()
+  const { setActiveChat } = useChatStore()
   const [showNewChatDialog, setShowNewChatDialog] = useState(false)
 
   const handleLogout = async () => {
@@ -82,6 +85,9 @@ export function ChatHeader({ onToggleSidebar, onNewChat, isMobile = false }: Cha
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Nova Conversa</DialogTitle>
+              <DialogDescription>
+                Selecione um usuário da lista para iniciar uma nova conversa.
+              </DialogDescription>
             </DialogHeader>
             <NewChatContent onClose={() => setShowNewChatDialog(false)} />
           </DialogContent>
@@ -142,6 +148,8 @@ export function ChatHeader({ onToggleSidebar, onNewChat, isMobile = false }: Cha
 
 // Componente para o conteúdo do diálogo de nova conversa
 function NewChatContent({ onClose }: { onClose: () => void }) {
+  const { setActiveChat } = useChatStore()
+  const [isCreating, setIsCreating] = useState(false)
   const [users, setUsers] = useState([
     { id: 1, name: 'Maria Santos', email: 'user2@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=MS&size=200&background=85e68e&color=ffffff&bold=true&format=png', initials: 'MS' },
     { id: 2, name: 'Pedro Oliveira', email: 'user3@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=PO&size=200&background=856be6&color=ffffff&bold=true&format=png', initials: 'PO' },
@@ -149,10 +157,83 @@ function NewChatContent({ onClose }: { onClose: () => void }) {
     { id: 4, name: 'Super Admin', email: 'admin@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=SA&size=200&background=f39c12&color=ffffff&bold=true&format=png', initials: 'SA' },
   ])
 
-  const startChat = (user: any) => {
-    console.log('Iniciando chat com:', user.name)
-    // Aqui você implementaria a lógica para criar um novo chat
-    onClose()
+  const startChat = async (selectedUser: any) => {
+    if (isCreating) return
+    
+    try {
+      setIsCreating(true)
+      console.log('🚀 Iniciando chat com:', selectedUser.name)
+      
+      // Usar o apiClient que já tem autenticação configurada
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1'
+      const accessToken = localStorage.getItem('access_token')
+      
+      console.log('📡 Enviando request para:', `${apiUrl}/chats/`)
+      console.log('📨 Dados enviados:', { email: selectedUser.email })
+      console.log('🔑 Token:', accessToken ? 'Presente' : 'Ausente')
+      
+      const response = await fetch(`${apiUrl}/chats/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          email: selectedUser.email
+        })
+      })
+      
+      console.log('📥 Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ Erro do servidor:', errorData)
+        throw new Error(errorData.error || `Erro ${response.status}: ${response.statusText}`)
+      }
+      
+      const chatData = await response.json()
+      console.log('✅ Chat criado/encontrado com sucesso:', chatData)
+      
+      // Converter os dados do Django para o formato esperado pela store
+      const chat = {
+        id: chatData.id.toString(), // Converter para string se necessário
+        title: chatData.user?.name || 'Chat',
+        name: chatData.user?.name || 'Chat',
+        avatar: chatData.user?.avatar,
+        description: undefined,
+        type: 'private' as const,
+        participants: [], // Será populado conforme necessário
+        messages: [],
+        lastMessage: chatData.last_message,
+        unreadCount: chatData.unseen_count || 0,
+        isActive: true,
+        settings: {
+          isPublic: false,
+          allowInvites: true,
+          allowFileSharing: true,
+          maxFileSize: 10,
+          messageRetention: 30,
+          moderationLevel: 'none' as const,
+        },
+        createdBy: '',
+        createdAt: new Date(),
+        updatedAt: new Date(chatData.viewed_at),
+      }
+      
+      // Definir como chat ativo
+      setActiveChat(chat)
+      console.log('🎯 Chat definido como ativo:', chat)
+      
+      // Fechar o modal
+      onClose()
+      
+    } catch (error) {
+      console.error('❌ Erro ao criar chat:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
+      alert(`Erro ao criar chat: ${errorMessage}`)
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   return (
@@ -166,8 +247,10 @@ function NewChatContent({ onClose }: { onClose: () => void }) {
         {users.map((user) => (
           <div
             key={user.id}
-            className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors"
-            onClick={() => startChat(user)}
+            className={`flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors ${
+              isCreating ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            onClick={() => !isCreating && startChat(user)}
           >
             <Avatar>
               <AvatarImage src={user.avatar} alt={user.name} />
@@ -177,6 +260,9 @@ function NewChatContent({ onClose }: { onClose: () => void }) {
               <p className="font-medium">{user.name}</p>
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
+            {isCreating && (
+              <div className="text-xs text-muted-foreground">Criando...</div>
+            )}
           </div>
         ))}
       </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useChatStore } from '@/stores/chat'
+import { useChatStore } from '@/stores/chat-store'
 import { useAuthStore } from '@/stores/auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -14,11 +14,11 @@ interface ChatListProps {
 }
 
 export function ChatList({ onChatSelect }: ChatListProps) {
-  const { chats, selectedChatId, selectChat } = useChatStore()
+  const { chatList, activeChat, setActiveChat } = useChatStore()
   const { user } = useAuthStore()
 
-  const handleChatClick = (chatId: string) => {
-    selectChat(chatId)
+  const handleChatClick = (chat: any) => {
+    setActiveChat(chat)
     onChatSelect?.()
   }
 
@@ -73,7 +73,7 @@ export function ChatList({ onChatSelect }: ChatListProps) {
     }
   }
 
-  if (!chats || chats.length === 0) {
+  if (!chatList || chatList.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-muted-foreground">
         <div className="text-center">
@@ -86,17 +86,17 @@ export function ChatList({ onChatSelect }: ChatListProps) {
 
   return (
     <div className="space-y-1">
-      {chats.map((chat) => {
+      {chatList.map((chat) => {
         const otherParticipant = getOtherParticipant(chat)
         const lastMessagePreview = getLastMessagePreview(chat)
         const lastMessageTime = getLastMessageTime(chat)
-        const isSelected = selectedChatId === chat.id
+        const isSelected = activeChat?.id === chat.id
         const unreadCount = chat.unreadCount || 0
 
         return (
           <button
             key={chat.id}
-            onClick={() => handleChatClick(chat.id)}
+            onClick={() => handleChatClick(chat)}
             className={cn(
               "w-full p-3 text-left hover:bg-accent transition-colors rounded-lg",
               isSelected && "bg-accent"

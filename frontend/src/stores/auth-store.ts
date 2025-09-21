@@ -178,13 +178,21 @@ export const useAuthStore = create<AuthState>()(
 
           if (result.success && result.user) {
             console.log('✅ Store: Definindo usuário como autenticado')
-            set({
+            const newState = {
               user: result.user,
               isAuthenticated: true,
               isLoading: false,
               error: null,
-            })
+            }
+            console.log('📊 Store: Novo estado:', newState)
+            set(newState)
             console.log('🎯 Store: Estado atualizado, isAuthenticated=true')
+            
+            // Verificar se o estado foi realmente atualizado
+            setTimeout(() => {
+              const currentState = get()
+              console.log('🔍 Store: Estado atual após set:', { isAuthenticated: currentState.isAuthenticated, user: currentState.user?.name })
+            }, 10)
           } else {
             console.log('❌ Store: Login falhou, limpando estado')
             set({
@@ -425,10 +433,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-store',
       storage: createJSONStorage(() => {
-        // Use sessionStorage for better security
-        // User data will be cleared when browser is closed
+        // Use localStorage instead of sessionStorage for persistence
         if (typeof window !== 'undefined') {
-          return sessionStorage
+          return localStorage
         }
         // Fallback storage for SSR
         return {

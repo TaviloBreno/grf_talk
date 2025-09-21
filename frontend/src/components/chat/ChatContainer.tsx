@@ -1,11 +1,13 @@
 'use client'
 
+import { useEffect } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { MessageSquarePlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ChatFooter from './ChatFooter'
+import MessageItem from './MessageItem'
 import ConnectionStatus from '@/components/ui/connection-status'
-import { useChatStore } from '@/stores/chat'
+import { useChatStore } from '@/stores/chat-store'
 import { useAuthStore } from '@/stores/auth-store'
 
 interface ChatContainerProps {
@@ -16,8 +18,18 @@ export function ChatContainer({
   className
 }: ChatContainerProps) {
   // Store integration
-  const { activeChat: chat } = useChatStore()
+  const { activeChat: chat, messages, sendMessage, loadMessages } = useChatStore()
   const { user: currentUser } = useAuthStore()
+  
+  // Load messages when active chat changes
+  useEffect(() => {
+    if (chat?.id) {
+      loadMessages(chat.id)
+    }
+  }, [chat?.id, loadMessages])
+  
+  // Get messages for the active chat
+  const chatMessages = chat?.id ? messages[chat.id] || [] : []
   
   // Early return if no chat or user
   if (!chat || !currentUser) {
@@ -34,6 +46,21 @@ export function ChatContainer({
     )
   }
 
+  const handleSendMessage = async (content: string, attachments?: File[]) => {
+    if (!chat?.id || !content.trim()) return
+    
+    try {
+      console.log('🚀 Enviando mensagem:', { content, attachments })
+      await sendMessage(chat.id, {
+        content: content.trim(),
+        type: 'text',
+        attachments: attachments || []
+      })
+    } catch (error) {
+      console.error('❌ Erro ao enviar mensagem:', error)
+    }
+  }
+
   return (
     <div className={cn("flex flex-col h-full", className)}>
       {/* Chat Header Simples para container de chat */}
@@ -46,7 +73,9 @@ export function ChatContainer({
           </div>
           <div>
             <h3 className="font-semibold text-sm">{chat?.name || 'Chat'}</h3>
-            <p className="text-xs text-muted-foreground">Online</p>
+            <p className="text-xs text-muted-foreground">
+              {chat.participants?.length > 0 ? `${chat.participants.length} participantes` : 'Online'}
+            </p>
           </div>
         </div>
       </div>
@@ -54,20 +83,31 @@ export function ChatContainer({
       {/* Messages Area */}
       <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
-          {/* Mock messages for now */}
-          <div className="text-center text-muted-foreground py-8">
-            <p>Mensagens serão exibidas aqui</p>
-            <p className="text-sm mt-2">Chat: {chat.name}</p>
-          </div>
+          {chatMessages.length > 0 ? (
+            chatMessages.map((message) => (
+              <MessageItem
+                key={message.id}
+                message={message}
+                currentUser={currentUser}
+                isOwn={message.sender?.id === currentUser.id}
+                showAvatar={true}
+                showTimestamp={true}
+              />
+            ))
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              <p>Nenhuma mensagem ainda</p>
+              <p className="text-sm mt-2">Comece a conversar em {chat.name}</p>
+            </div>
+          )}
         </div>
       </ScrollArea>
 
       {/* Chat Footer */}
       <ChatFooter
-        onSendMessage={(content: string, attachments?: File[]) => {
-          console.log('Enviando mensagem:', { content, attachments })
-        }}
+        onSendMessage={handleSendMessage}
         disabled={false}
+        placeholder={`Enviar mensagem para ${chat.name}...`}
       />
 
       {/* Connection Status */}

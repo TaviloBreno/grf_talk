@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/stores/auth-store'
-import { useChatStore } from '@/stores/chat'
+import { useChatStore } from '@/stores/chat-store'
 import { ChatContainer } from '@/components/chat/ChatContainer'
 import { ChatList } from '@/components/chat/ChatList'
 import { ChatFilters } from '@/components/chat/ChatFilters'
@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 export default function ChatPage() {
   const router = useRouter()
   const { isAuthenticated, user, isLoading } = useAuthStore()
-  const { chats, activeChat, setActiveChat } = useChatStore()
+  const { chatList, activeChat, setActiveChat, loadChats } = useChatStore()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
@@ -51,6 +51,8 @@ export default function ChatPage() {
         router.push('/auth/signin')
       } else {
         console.log('✅ Chat Page: Usuário autenticado, carregando chat')
+        // Carregar chats quando usuário está autenticado
+        loadChats()
       }
     }
 
