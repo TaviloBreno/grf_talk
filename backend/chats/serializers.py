@@ -23,10 +23,10 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     
     def get_isEdited(self, obj):
         """Verifica se a mensagem foi editada comparando created_at com updated_at."""
-        # Se updated_at é significativamente diferente de created_at (mais de 1 segundo), foi editada
+        # Se updated_at é significativamente diferente de created_at (mais de 5 segundos), foi editada
         if obj.updated_at and obj.created_at:
             time_diff = (obj.updated_at - obj.created_at).total_seconds()
-            return time_diff > 1  # Considera editada se a diferença for maior que 1 segundo
+            return time_diff > 5  # Considera editada se a diferença for maior que 5 segundos
         return False
     
     def get_attachment(self, obj):
