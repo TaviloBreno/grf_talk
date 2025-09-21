@@ -335,16 +335,16 @@ export function MessageItem({
   return (
     <div
       className={cn(
-        'group flex gap-3 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors',
-        isOwn && 'flex-row-reverse',
+        'group flex gap-3 px-4 py-1 transition-colors',
+        isOwn ? 'justify-end' : 'justify-start',
         isGrouped && 'mt-1',
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Avatar */}
-      {showAvatar && !isGrouped && (
+      {/* Avatar for other users */}
+      {!isOwn && showAvatar && !isGrouped && (
         <div className="shrink-0">
           <Avatar className="h-8 w-8">
             <AvatarImage src={message.from_user?.avatar} alt={message.from_user?.name} />
@@ -355,19 +355,16 @@ export function MessageItem({
         </div>
       )}
 
-      {/* Spacer for grouped messages */}
-      {!showAvatar && isGrouped && <div className="w-8 shrink-0" />}
+      {/* Spacer for grouped messages from others */}
+      {!isOwn && !showAvatar && isGrouped && <div className="w-8 shrink-0" />}
 
       {/* Message Content */}
-      <div className={cn('flex-1 min-w-0', isOwn && 'flex flex-col items-end')}>
-        {/* Sender Name & Timestamp */}
-        {showAvatar && !isGrouped && (
-          <div className={cn(
-            'flex items-baseline gap-2 mb-1',
-            isOwn && 'flex-row-reverse'
-          )}>
+      <div className={cn('flex flex-col max-w-[70%]', isOwn ? 'items-end' : 'items-start')}>
+        {/* Sender Name & Timestamp for others */}
+        {!isOwn && showAvatar && !isGrouped && (
+          <div className="flex items-baseline gap-2 mb-1">
             <span className="text-sm font-medium text-gray-900 dark:text-white">
-              {isOwn ? 'Você' : message.from_user?.name}
+              {message.from_user?.name}
             </span>
             {showTimestamp && (
               <span className="text-xs text-gray-500">
@@ -380,10 +377,10 @@ export function MessageItem({
         {/* Message Bubble */}
         <div
           className={cn(
-            'relative rounded-lg px-3 py-2 max-w-lg',
+            'relative rounded-2xl px-4 py-2 shadow-sm',
             isOwn 
-              ? 'bg-blue-600 text-white ml-auto' 
-              : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600'
+              ? 'bg-blue-600 text-white rounded-br-md' 
+              : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-bl-md'
           )}
         >
           {renderMessageContent()}
@@ -397,11 +394,11 @@ export function MessageItem({
               <span className="italic">editado</span>
             )}
             
-            {showTimestamp && isGrouped && (
+            {showTimestamp && (
               <span>{formatTime(message.created_at ? new Date(message.created_at) : new Date())}</span>
             )}
             
-            {getDeliveryIcon()}
+            {isOwn && getDeliveryIcon()}
           </div>
         </div>
 
@@ -412,8 +409,8 @@ export function MessageItem({
       {/* Actions Menu */}
       {isHovered && (
         <div className={cn(
-          'opacity-0 group-hover:opacity-100 transition-opacity shrink-0',
-          isOwn && 'order-first'
+          'opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-start',
+          isOwn ? 'order-first mr-2' : 'ml-2'
         )}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

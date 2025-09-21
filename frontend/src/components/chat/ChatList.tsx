@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { useChatStore } from '@/stores/chat-store'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth-store'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -14,7 +14,7 @@ interface ChatListProps {
 }
 
 export function ChatList({ onChatSelect }: ChatListProps) {
-  const { chatList, activeChat, setActiveChat } = useChatStore()
+  const { chatList, activeChat, setActiveChat, messages } = useChatStore()
   const { user } = useAuthStore()
 
   const handleChatClick = (chat: any) => {
@@ -23,15 +23,18 @@ export function ChatList({ onChatSelect }: ChatListProps) {
   }
 
   const getLastMessagePreview = (chat: any) => {
-    if (!chat.messages || chat.messages.length === 0) {
+    // Pegar mensagens do store de mensagens usando o ID do chat
+    const chatMessages = messages[chat.id] || []
+    
+    if (chatMessages.length === 0) {
       return 'Nenhuma mensagem'
     }
 
-    const lastMessage = chat.messages[chat.messages.length - 1]
+    const lastMessage = chatMessages[chatMessages.length - 1]
     
     switch (lastMessage.type) {
       case 'text':
-        return lastMessage.content
+        return lastMessage.body || lastMessage.content || 'Mensagem de texto'
       case 'image':
         return '📷 Imagem'
       case 'audio':
@@ -39,37 +42,53 @@ export function ChatList({ onChatSelect }: ChatListProps) {
       case 'file':
         return '📄 Arquivo'
       default:
-        return 'Mensagem'
+        return lastMessage.body || lastMessage.content || 'Mensagem'
     }
   }
 
   const getLastMessageTime = (chat: any) => {
-    if (!chat.messages || chat.messages.length === 0) {
+    const chatMessages = messages[chat.id] || []
+    
+    if (chatMessages.length === 0) {
       return ''
     }
 
-    const lastMessage = chat.messages[chat.messages.length - 1]
-    return formatDistanceToNow(new Date(lastMessage.timestamp), {
-      addSuffix: true,
-      locale: ptBR
-    })
+    const lastMessage = chatMessages[chatMessages.length - 1]
+    try {
+      return formatDistanceToNow(new Date(lastMessage.created_at), {
+        addSuffix: true,
+        locale: ptBR
+      })
+    } catch {
+      return ''
+    }
   }
 
   const getOtherParticipant = (chat: any) => {
-    if (chat.type === 'group') {
+    // Para chats privados, usar to_user ou from_user dependendo de quem é o atual
+    if (chat.to_user && chat.from_user) {
+      const otherUser = chat.to_user.id === user?.id ? chat.from_user : chat.to_user
       return {
-        name: chat.name,
-        avatar: chat.avatar,
-        id: chat.id
+        name: otherUser.name || otherUser.email,
+        avatar: otherUser.avatar,
+        id: otherUser.id
       }
     }
 
-    // Para chats privados, encontrar o outro participante
-    const otherParticipant = chat.participants?.find((p: any) => p.id !== user?.id)
-    return otherParticipant || {
-      name: 'Usuário Desconhecido',
-      avatar: null,
-      id: 'unknown'
+    // Fallback para estrutura antiga ou dados incompletos
+    if (chat.participants) {
+      const otherParticipant = chat.participants.find((p: any) => p.id !== user?.id)
+      return otherParticipant || {
+        name: 'Usuário Desconhecido',
+        avatar: null,
+        id: 'unknown'
+      }
+    }
+
+    return {
+      name: chat.name || 'Chat',
+      avatar: chat.avatar,
+      id: chat.id
     }
   }
 

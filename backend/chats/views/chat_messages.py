@@ -34,14 +34,8 @@ class ChatMessagesView(BaseView):
             deleted_at__isnull=True
         ).order_by('created_at')
         
-        print(f"🔍 [DEBUG] GET /api/chats/{chat_id}/messages/ - Found {messages.count()} messages")
-        print(f"🔍 [DEBUG] SQL Query: {messages.query}")
-        for msg in messages:
-            print(f"🔍 [DEBUG] Message {msg.id}: '{msg.body}' from {msg.from_user.name} ({msg.from_user.id}) at {msg.created_at}")
-        
         # Serializar mensagens
         serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
-        print(f"🔍 [DEBUG] Serialized {len(serializer.data)} messages")
         
         # Marcar mensagens como recebidas pelo usuário logado
         self.mark_messages_as_received(chat_id, request.user.id)
@@ -70,11 +64,8 @@ class ChatMessagesView(BaseView):
         attachment_code = request.data.get('attachment_code')
         attachment_id = request.data.get('attachment_id')
         
-        print(f"🔍 Extracted - body: '{body}', attachment_code: {attachment_code}, attachment_id: {attachment_id}")
-        
         # Validar que pelo menos body ou anexo esteja presente
         if not body and not (attachment_code and attachment_id):
-            print("❌ Validation failed: No body or attachment")
             return Response(
                 {'error': 'Corpo da mensagem ou anexo é obrigatório'}, 
                 status=400
@@ -128,20 +119,16 @@ class ChatMessagesView(BaseView):
             message_data['attachment_id'] = attachment_id
         
         message = ChatMessage.objects.create(**message_data)
-        print(f"✅ DEBUG: Mensagem criada com ID {message.id} no chat {chat.id}")
         
         # Atualizar viewed_at do chat
         chat.viewed_at = timezone.now()
         chat.save()
-        print(f"✅ DEBUG: Chat {chat.id} atualizado")
         
         # Serializar mensagem criada
         serializer = ChatMessageSerializer(message, context={'request': request})
-        print(f"✅ DEBUG: Mensagem serializada: {serializer.data}")
         
         # Determinar usuário destinatário
         to_user = chat.to_user if chat.from_user.id == request.user.id else chat.from_user
-        print(f"✅ DEBUG: Usuário destinatário: {to_user.id} ({to_user.email})")
         
         # Emitir evento socket para o destinatário
         try:

@@ -28,19 +28,15 @@ export function ChatContainer({
     }
   }, [chat?.id, loadMessages])
 
-  // Poll for new messages every 5 seconds when a chat is active
+  // Poll for new messages every 3 seconds when a chat is active
   useEffect(() => {
     if (!chat?.id) return
-
-    console.log(`[ChatContainer] Iniciando polling para chat ${chat.id}`)
     
     const interval = setInterval(() => {
-      console.log(`[ChatContainer] Polling: verificando novas mensagens para chat ${chat.id}`)
       loadMessages(chat.id)
     }, 3000) // Check for new messages every 3 seconds
 
     return () => {
-      console.log(`[ChatContainer] Parando polling para chat ${chat.id}`)
       clearInterval(interval)
     }
   }, [chat?.id, loadMessages])
@@ -67,13 +63,11 @@ export function ChatContainer({
     if (!chat?.id || !content.trim()) return
     
     try {
-      console.log('🚀 Enviando mensagem:', { content, attachments, chatId: chat.id })
       await sendMessage(chat.id, {
         content: content.trim(),
         type: 'text',
         attachments: attachments || []
       })
-      console.log('✅ Mensagem enviada com sucesso')
     } catch (error) {
       console.error('❌ Erro ao enviar mensagem:', error)
       

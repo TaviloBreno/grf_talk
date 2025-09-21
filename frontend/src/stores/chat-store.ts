@@ -209,13 +209,10 @@ export const useChatStore = create<ChatStoreState>()(
       // Load messages for a chat
       loadMessages: async (chatId: string, page = 1) => {
         try {
-          console.log(`[ChatStore] Carregando mensagens para chat ${chatId}, página ${page}`)
           const response = await chatApi.getMessages(chatId, { page, limit: 50 })
           
-          console.log(`[ChatStore] Resposta da API:`, response)
-          
           // O backend retorna dados diretamente, não em formato { success, data }
-          let messages = []
+          let messages: Message[] = []
           
           if (response.data && Array.isArray(response.data)) {
             // Backend retorna array direto
@@ -227,11 +224,8 @@ export const useChatStore = create<ChatStoreState>()(
             // Resposta é array direto
             messages = response
           }
-          
-          console.log(`[ChatStore] Recebidas ${messages.length} mensagens:`, messages)
 
           set((state) => {
-            const previousCount = state.messages[chatId]?.length || 0
             if (page === 1) {
               // First page, replace all messages
               state.messages[chatId] = messages
@@ -242,12 +236,9 @@ export const useChatStore = create<ChatStoreState>()(
                 ...(state.messages[chatId] || [])
               ]
             }
-            const newCount = state.messages[chatId]?.length || 0
-            console.log(`[ChatStore] Mensagens atualizadas: ${previousCount} → ${newCount}`)
           })
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar mensagens'
-          console.error(`[ChatStore] Erro ao carregar mensagens:`, error)
           set((state) => {
             state.error = errorMessage
           })
@@ -263,14 +254,10 @@ export const useChatStore = create<ChatStoreState>()(
             type: data.type || 'text' as const,
           }
 
-          console.log(`[ChatStore] Enviando mensagem para chat ${chatId}:`, messageData)
           const response = await chatApi.sendMessage(chatId, messageData)
-          
-          console.log(`[ChatStore] Resposta do servidor:`, response)
           
           // O backend retorna diretamente os dados da mensagem em response.data
           const newMessage = (response as any).data ? (response as any).data : (response as any)
-          console.log(`[ChatStore] Nova mensagem criada:`, newMessage)
 
           set((state) => {
             if (!state.messages[chatId]) {
@@ -280,7 +267,6 @@ export const useChatStore = create<ChatStoreState>()(
             const messageExists = state.messages[chatId].some(msg => msg.id === newMessage.id)
             if (!messageExists) {
               state.messages[chatId].push(newMessage)
-              console.log(`[ChatStore] Mensagem adicionada localmente. Total: ${state.messages[chatId].length}`)
             }
             
             // Update last message in chat list
