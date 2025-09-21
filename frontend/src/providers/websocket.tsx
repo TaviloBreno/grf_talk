@@ -2,12 +2,12 @@
 
 import { createContext, useContext } from 'react'
 import type { Message, TypingUser } from '@/types/chat'
-import type { User } from '@/types'
+import type { User, ConnectionStatus } from '@/types'
 
 interface WebSocketContextType {
   socket: null
   isConnected: false
-  connectionStatus: 'disconnected'
+  connectionStatus: ConnectionStatus
   joinChat: (chatId: string) => void
   leaveChat: (chatId: string) => void
   sendMessage: (chatId: string, message: Omit<Message, 'id' | 'createdAt' | 'updatedAt'>) => void

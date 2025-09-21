@@ -116,6 +116,9 @@ export interface ValidationError {
 // Common utility types
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 
+// WebSocket connection status
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
+
 export interface BaseEntity {
   id: string
   createdAt: Date

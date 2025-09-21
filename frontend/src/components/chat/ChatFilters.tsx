@@ -76,7 +76,7 @@ export function ChatFilters({ className }: ChatFiltersProps) {
           p.user.name.toLowerCase().includes(query) ||
           p.user.email.toLowerCase().includes(query)
         ) ||
-        chat.lastMessage?.content.toLowerCase().includes(query)
+        chat.lastMessage?.content?.toLowerCase().includes(query)
       )
     }
 
@@ -113,8 +113,8 @@ export function ChatFilters({ className }: ChatFiltersProps) {
 
       switch (filters.sort) {
         case 'recent':
-          const aTime = a.lastMessage ? new Date(a.lastMessage.createdAt).getTime() : 0
-          const bTime = b.lastMessage ? new Date(b.lastMessage.createdAt).getTime() : 0
+          const aTime = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0
+          const bTime = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0
           compareValue = bTime - aTime
           break
         case 'name':

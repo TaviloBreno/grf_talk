@@ -187,9 +187,9 @@ export const chatApi = {
   },
 
   // Update message
-  updateMessage: async (messageId: string, data: UpdateMessageFormData): Promise<ApiResponse<Message>> => {
+  updateMessage: async (chatId: string, messageId: string, data: UpdateMessageFormData): Promise<ApiResponse<Message>> => {
     try {
-      const response = await apiClient.put(`/messages/${messageId}`, data)
+      const response = await apiClient.put(`/chats/${chatId}/messages/${messageId}/`, data)
       return response.data
     } catch (error) {
       throw handleApiError(error)
@@ -197,9 +197,9 @@ export const chatApi = {
   },
 
   // Delete message
-  deleteMessage: async (messageId: string): Promise<ApiResponse<void>> => {
+  deleteMessage: async (chatId: string, messageId: string): Promise<ApiResponse<void>> => {
     try {
-      const response = await apiClient.delete(`/messages/${messageId}`)
+      const response = await apiClient.delete(`/chats/${chatId}/messages/${messageId}/`)
       return response.data
     } catch (error) {
       throw handleApiError(error)

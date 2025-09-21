@@ -6,9 +6,10 @@ import { MessageSquarePlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ChatFooter from './ChatFooter'
 import MessageItem from './MessageItem'
-import ConnectionStatus from '@/components/ui/connection-status'
+import { ConnectionStatus } from '@/components/ui/connection-status'
 import { useChatStore } from '@/stores/chat-store'
 import { useAuthStore } from '@/stores/auth-store'
+import type { Message } from '@/types/chat'
 
 interface ChatContainerProps {
   className?: string
@@ -18,17 +19,30 @@ export function ChatContainer({
   className
 }: ChatContainerProps) {
   // Store integration
-  const { activeChat: chat, messages, sendMessage, loadMessages } = useChatStore()
+  const { activeChat: chat, messages, sendMessage, loadMessages, updateMessage, deleteMessage } = useChatStore()
   const { user: currentUser } = useAuthStore()
   
-  // Debug logs temporários
-  console.log('🔍 ChatContainer Debug:', {
-    chat: chat?.id ? `Chat ${chat.id}` : 'No chat',
-    currentUser: currentUser?.id ? `User ${currentUser.id}` : 'No user',
-    messagesCount: chat?.id ? (messages[chat.id] || []).length : 0
-  })
+  // Load messages when active chat changes
+  useEffect(() => {
+    if (chat?.id) {
+      loadMessages(chat.id)
+    }
+  }, [chat?.id, loadMessages])
+
+  // Poll for new messages every 3 seconds when a chat is active
+  useEffect(() => {
+    if (!chat?.id) return
+    
+    const interval = setInterval(() => {
+      loadMessages(chat.id)
+    }, 3000) // Check for new messages every 3 seconds
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [chat?.id, loadMessages])
   
-  // Early return if no chat - removendo verificação de currentUser
+  // Early return if no chat
   if (!chat) {
     return (
       <div className={cn("flex items-center justify-center h-full", className)}>
@@ -47,29 +61,53 @@ export function ChatContainer({
     if (!chat?.id || !content.trim()) return
     
     try {
-      console.log('🚀 Enviando mensagem:', content)
       await sendMessage(chat.id, {
         content: content.trim(),
         type: 'text',
         attachments: []
       })
-      console.log('✅ Mensagem enviada com sucesso')
     } catch (error) {
       console.error('❌ Erro ao enviar mensagem:', error)
       alert('Erro ao enviar mensagem')
     }
   }
 
+  const handleEditMessage = async (message: Message) => {
+    if (!chat?.id) return
+    
+    const newContent = prompt('Editar mensagem:', message.body)
+    if (newContent && newContent.trim() !== message.body) {
+      try {
+        await updateMessage(chat.id, message.id, { content: newContent.trim() })
+      } catch (error) {
+        console.error('Erro ao editar mensagem:', error)
+        alert('Erro ao editar mensagem')
+      }
+    }
+  }
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!chat?.id) return
+    
+    if (confirm('Tem certeza que deseja deletar esta mensagem?')) {
+      try {
+        await deleteMessage(chat.id, messageId)
+      } catch (error) {
+        console.error('Erro ao deletar mensagem:', error)
+        alert('Erro ao deletar mensagem')
+      }
+    }
+  }
+
   // Get messages for the active chat
   const chatMessages = chat?.id ? messages[chat.id] || [] : []
   
-  // Get other participant info
-  const otherParticipant = chat?.user || chat?.to_user || chat?.from_user
-  const participantName = otherParticipant?.name || otherParticipant?.email || 'Chat'
+  // Get other participant info (based on ChatList implementation)
+  const participantName = chat?.name || chat?.title || 'Chat'
 
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      {/* Chat Header Simples */}
+      {/* Chat Header */}
       <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
@@ -84,25 +122,21 @@ export function ChatContainer({
         </div>
       </div>
 
-      {/* Messages Area - SIMPLIFICADO */}
-      <div className="flex-1 p-4 overflow-y-auto">
+      {/* Messages Area */}
+      <ScrollArea className="flex-1 p-4">
         <div className="space-y-4">
           {chatMessages.length > 0 ? (
             chatMessages.map((message) => (
-              <div 
+              <MessageItem
                 key={message.id}
-                className={cn(
-                  "flex w-max max-w-[75%] flex-col gap-2 rounded-lg px-3 py-2 text-sm",
-                  message.from_user?.id === currentUser?.id
-                    ? "ml-auto bg-primary text-primary-foreground"
-                    : "bg-muted"
-                )}
-              >
-                <div>{message.body}</div>
-                <div className="text-xs opacity-70">
-                  {new Date(message.created_at).toLocaleTimeString()}
-                </div>
-              </div>
+                message={message}
+                currentUser={currentUser!}
+                isOwn={message.from_user?.id === currentUser?.id}
+                showAvatar={true}
+                showTimestamp={true}
+                onEdit={handleEditMessage}
+                onDelete={handleDeleteMessage}
+              />
             ))
           ) : (
             <div className="text-center text-muted-foreground py-8">
@@ -111,45 +145,13 @@ export function ChatContainer({
             </div>
           )}
         </div>
-      </div>
+      </ScrollArea>
 
-      {/* Chat Footer - SEMPRE VISÍVEL */}
-      <div 
-        className="border-t bg-white dark:bg-gray-800 p-4"
-        style={{ minHeight: '80px', backgroundColor: '#f0f0f0' }}
-      >
-        <div className="flex items-center space-x-2">
-          <input 
-            type="text" 
-            placeholder="Digite sua mensagem..." 
-            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            style={{ minHeight: '40px' }}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                handleSendMessage(e.currentTarget.value.trim())
-                e.currentTarget.value = ''
-              }
-            }}
-          />
-          <button 
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
-            style={{ minHeight: '40px' }}
-            onClick={() => {
-              const input = document.querySelector('input[type="text"]') as HTMLInputElement
-              if (input && input.value.trim()) {
-                handleSendMessage(input.value.trim())
-                input.value = ''
-              }
-            }}
-          >
-            Enviar
-          </button>
-        </div>
-        {/* Debug info - SEMPRE VISÍVEL */}
-        <div className="text-xs text-gray-700 mt-2 bg-yellow-100 p-2 rounded">
-          Debug: Chat ID: {chat?.id} | User ID: {currentUser?.id} | Messages: {chatMessages.length}
-        </div>
-      </div>
+      {/* Chat Footer */}
+      <ChatFooter onSendMessage={handleSendMessage} />
+
+      {/* Connection Status */}
+      <ConnectionStatus />
     </div>
   )
 }

@@ -290,29 +290,26 @@ export const useChatStore = create<ChatStoreState>()(
       },
 
       // Update message
-      updateMessage: async (messageId: string, data: UpdateMessageData) => {
+      updateMessage: async (chatId: string, messageId: string, data: UpdateMessageData) => {
         try {
-          const response = await chatApi.updateMessage(messageId, data)
+          const response = await chatApi.updateMessage(chatId, messageId, data)
           
           if (response.success && response.data) {
             const updatedMessage = response.data
 
             set((state) => {
-              Object.keys(state.messages).forEach(chatId => {
+              // Update message in messages state
+              if (state.messages[chatId]) {
                 const messageIndex = state.messages[chatId].findIndex(msg => msg.id === messageId)
                 if (messageIndex !== -1) {
                   state.messages[chatId][messageIndex] = updatedMessage
                 }
-              })
+              }
             })
 
             return updatedMessage
           } else {
-            const errorMessage = response.message || 'Erro ao atualizar mensagem'
-            set((state) => {
-              state.error = errorMessage
-            })
-            throw new Error(errorMessage)
+            throw new Error(response.message || 'Erro ao atualizar mensagem')
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar mensagem'
@@ -324,22 +321,19 @@ export const useChatStore = create<ChatStoreState>()(
       },
 
       // Delete message
-      deleteMessage: async (messageId: string) => {
+      deleteMessage: async (chatId: string, messageId: string) => {
         try {
-          const response = await chatApi.deleteMessage(messageId)
+          const response = await chatApi.deleteMessage(chatId, messageId)
           
           if (response.success) {
             set((state) => {
-              Object.keys(state.messages).forEach(chatId => {
+              // Remove message from messages state
+              if (state.messages[chatId]) {
                 state.messages[chatId] = state.messages[chatId].filter(msg => msg.id !== messageId)
-              })
+              }
             })
           } else {
-            const errorMessage = response.message || 'Erro ao deletar mensagem'
-            set((state) => {
-              state.error = errorMessage
-            })
-            throw new Error(errorMessage)
+            throw new Error(response.message || 'Erro ao deletar mensagem')
           }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Erro ao deletar mensagem'

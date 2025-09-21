@@ -30,7 +30,8 @@ import {
   Headphones
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { Message, MessageReaction, MessageStatus } from '@/types/chat'
+import { MessageStatus } from './MessageStatus'
+import type { Message, MessageReaction, MessageStatus as MessageStatusType } from '@/types/chat'
 import type { User } from '@/types'
 
 interface MessageItemProps {
@@ -110,7 +111,7 @@ export function MessageItem({
     if (!isOwn) return null
     
     // Use the message status or default to read for demo
-    const status: MessageStatus = message.status || 'read'
+    const status: MessageStatusType = message.status || 'read'
     
     switch (status) {
       case 'sending':
@@ -398,7 +399,11 @@ export function MessageItem({
               <span>{formatTime(message.created_at ? new Date(message.created_at) : new Date())}</span>
             )}
             
-            {isOwn && getDeliveryIcon()}
+            <MessageStatus 
+              status={message.status}
+              viewedAt={message.viewed_at}
+              isOwn={isOwn}
+            />
           </div>
         </div>
 

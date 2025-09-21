@@ -193,8 +193,8 @@ export interface ChatActions {
   deleteChat: (chatId: string) => Promise<void>
   loadMessages: (chatId: string, page?: number) => Promise<void>
   sendMessage: (chatId: string, data: SendMessageData) => Promise<Message>
-  updateMessage: (messageId: string, data: UpdateMessageData) => Promise<Message>
-  deleteMessage: (messageId: string) => Promise<void>
+  updateMessage: (chatId: string, messageId: string, data: UpdateMessageData) => Promise<Message>
+  deleteMessage: (chatId: string, messageId: string) => Promise<void>
   joinChat: (chatId: string) => Promise<void>
   leaveChat: (chatId: string) => Promise<void>
   addParticipant: (chatId: string, userId: string) => Promise<void>

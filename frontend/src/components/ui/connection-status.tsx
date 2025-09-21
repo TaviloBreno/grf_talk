@@ -13,7 +13,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useWebSocket } from '@/providers/websocket'
-import { useChatStore } from '@/stores/chat'
+import { useChatStore } from '@/stores/chat-store'
+import type { ConnectionStatus } from '@/types'
 
 interface ConnectionStatusProps {
   className?: string
@@ -22,7 +23,6 @@ interface ConnectionStatusProps {
 
 export function ConnectionStatus({ className, showDetails = false }: ConnectionStatusProps) {
   const { connectionStatus, isConnected } = useWebSocket()
-  const { connectionQuality, lastActivity } = useChatStore()
   const [showReconnect, setShowReconnect] = useState(false)
 
   // Show reconnect button after 10 seconds of being disconnected
@@ -42,8 +42,8 @@ export function ConnectionStatus({ className, showDetails = false }: ConnectionS
     switch (connectionStatus) {
       case 'connected':
         return {
-          icon: connectionQuality === 'excellent' ? CheckCircle2 : Wifi,
-          label: isConnected ? 'Online' : 'Conectado',
+          icon: Wifi,
+          label: 'Conectado',
           variant: 'default' as const,
           color: 'text-green-600 dark:text-green-400',
           bgColor: 'bg-green-100 dark:bg-green-900/20'
@@ -84,28 +84,12 @@ export function ConnectionStatus({ className, showDetails = false }: ConnectionS
     }
   }
 
-  const getQualityIndicator = () => {
-    switch (connectionQuality) {
-      case 'excellent':
-        return { bars: 4, color: 'bg-green-500' }
-      case 'good':
-        return { bars: 3, color: 'bg-yellow-500' }
-      case 'poor':
-        return { bars: 2, color: 'bg-orange-500' }
-      case 'offline':
-        return { bars: 0, color: 'bg-gray-400' }
-      default:
-        return { bars: 0, color: 'bg-gray-400' }
-    }
-  }
-
   const handleReconnect = () => {
     // Trigger reconnection by reloading the page
     window.location.reload()
   }
 
   const config = getStatusConfig()
-  const quality = getQualityIndicator()
   const IconComponent = config.icon
 
   if (!showDetails) {
@@ -133,12 +117,7 @@ export function ConnectionStatus({ className, showDetails = false }: ConnectionS
           </div>
           {showDetails && (
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              {connectionStatus === 'connected' && (
-                <>
-                  Qualidade: {connectionQuality} • 
-                  Última atividade: {new Date(lastActivity).toLocaleTimeString('pt-BR')}
-                </>
-              )}
+              {connectionStatus === 'connected' && 'Conectado com sucesso'}
               {connectionStatus === 'connecting' && 'Estabelecendo conexão...'}
               {(connectionStatus === 'disconnected' || connectionStatus === 'error') && 
                 'Tentando reconectar automaticamente'
@@ -147,22 +126,6 @@ export function ConnectionStatus({ className, showDetails = false }: ConnectionS
           )}
         </div>
       </div>
-
-      {/* Signal strength indicator */}
-      {connectionStatus === 'connected' && (
-        <div className="flex items-end gap-px ml-auto">
-          {[1, 2, 3, 4].map((bar) => (
-            <div
-              key={bar}
-              className={cn(
-                'w-1 rounded-sm transition-colors',
-                bar <= quality.bars ? quality.color : 'bg-gray-300 dark:bg-gray-600'
-              )}
-              style={{ height: `${bar * 3 + 2}px` }}
-            />
-          ))}
-        </div>
-      )}
 
       {/* Reconnect button */}
       {showReconnect && (connectionStatus === 'disconnected' || connectionStatus === 'error') && (
