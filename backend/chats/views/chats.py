@@ -28,7 +28,17 @@ class ChatsView(BaseView):
         # Serializa chats com contexto do usuário logado
         serializer = ChatSerializer(chats, many=True, context={'request': request})
         
-        return Response(serializer.data)
+        # Retornar em formato paginado para compatibilidade com o frontend
+        return Response({
+            'success': True,
+            'data': {
+                'data': serializer.data,
+                'total': len(serializer.data),
+                'page': 1,
+                'pages': 1,
+                'per_page': 50
+            }
+        })
     
     def post(self, request):
         """

@@ -21,8 +21,6 @@ export default function ChatPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
 
-  console.log('🏠 Chat Page: Estado atual:', { isAuthenticated, user: !!user, isLoading, isInitialized })
-
   // Check mobile screen size
   useEffect(() => {
     const checkMobile = () => {
@@ -44,13 +42,9 @@ export default function ChatPage() {
       await new Promise(resolve => setTimeout(resolve, 100))
       setIsInitialized(true)
       
-      console.log('🔍 Chat Page: Verificando autenticação após inicialização')
-      
       if (!isAuthenticated && !user) {
-        console.log('❌ Chat Page: Não autenticado, redirecionando para login')
         router.push('/auth/signin')
       } else {
-        console.log('✅ Chat Page: Usuário autenticado, carregando chat')
         // Carregar chats quando usuário está autenticado
         loadChats()
       }

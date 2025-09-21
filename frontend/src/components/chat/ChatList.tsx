@@ -14,7 +14,7 @@ interface ChatListProps {
 }
 
 export function ChatList({ onChatSelect }: ChatListProps) {
-  const { chatList, activeChat, setActiveChat, messages } = useChatStore()
+  const { chatList, activeChat, setActiveChat, messages, isLoading, error } = useChatStore()
   const { user } = useAuthStore()
 
   const handleChatClick = (chat: any) => {
@@ -23,14 +23,12 @@ export function ChatList({ onChatSelect }: ChatListProps) {
   }
 
   const getLastMessagePreview = (chat: any) => {
-    // Pegar mensagens do store de mensagens usando o ID do chat
-    const chatMessages = messages[chat.id] || []
-    
-    if (chatMessages.length === 0) {
+    // Backend já fornece last_message no chat
+    if (!chat.last_message) {
       return 'Nenhuma mensagem'
     }
 
-    const lastMessage = chatMessages[chatMessages.length - 1]
+    const lastMessage = chat.last_message
     
     switch (lastMessage.type) {
       case 'text':
@@ -47,15 +45,12 @@ export function ChatList({ onChatSelect }: ChatListProps) {
   }
 
   const getLastMessageTime = (chat: any) => {
-    const chatMessages = messages[chat.id] || []
-    
-    if (chatMessages.length === 0) {
+    if (!chat.last_message) {
       return ''
     }
 
-    const lastMessage = chatMessages[chatMessages.length - 1]
     try {
-      return formatDistanceToNow(new Date(lastMessage.created_at), {
+      return formatDistanceToNow(new Date(chat.last_message.created_at), {
         addSuffix: true,
         locale: ptBR
       })
@@ -65,31 +60,34 @@ export function ChatList({ onChatSelect }: ChatListProps) {
   }
 
   const getOtherParticipant = (chat: any) => {
-    // Para chats privados, usar to_user ou from_user dependendo de quem é o atual
-    if (chat.to_user && chat.from_user) {
-      const otherUser = chat.to_user.id === user?.id ? chat.from_user : chat.to_user
-      return {
-        name: otherUser.name || otherUser.email,
-        avatar: otherUser.avatar,
-        id: otherUser.id
-      }
-    }
-
-    // Fallback para estrutura antiga ou dados incompletos
-    if (chat.participants) {
-      const otherParticipant = chat.participants.find((p: any) => p.id !== user?.id)
-      return otherParticipant || {
-        name: 'Usuário Desconhecido',
-        avatar: null,
-        id: 'unknown'
-      }
-    }
-
+    // Backend já fornece o 'user' (outro participante do chat)
     return {
-      name: chat.name || 'Chat',
-      avatar: chat.avatar,
-      id: chat.id
+      name: chat.user?.name || chat.user?.email || 'Usuário Desconhecido',
+      avatar: chat.user?.avatar,
+      id: chat.user?.id || 'unknown'
     }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-32 text-muted-foreground">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm">Carregando conversas...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-32 text-muted-foreground">
+        <div className="text-center">
+          <p className="text-sm text-red-500">Erro ao carregar conversas</p>
+          <p className="text-xs mt-1">{error}</p>
+        </div>
+      </div>
+    )
   }
 
   if (!chatList || chatList.length === 0) {
@@ -110,7 +108,7 @@ export function ChatList({ onChatSelect }: ChatListProps) {
         const lastMessagePreview = getLastMessagePreview(chat)
         const lastMessageTime = getLastMessageTime(chat)
         const isSelected = activeChat?.id === chat.id
-        const unreadCount = chat.unreadCount || 0
+        const unreadCount = (chat as any).unseen_count || 0
 
         return (
           <button
