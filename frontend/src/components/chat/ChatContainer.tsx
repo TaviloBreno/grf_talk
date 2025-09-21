@@ -132,12 +132,12 @@ export function ChatContainer({
       </ScrollArea>
 
       {/* Chat Footer */}
-      <div className="mt-auto border-t bg-white p-4">
+      <div className="mt-auto border-t bg-white dark:bg-gray-800 p-4">
         <div className="flex items-center space-x-2">
           <input 
             type="text" 
             placeholder="Digite sua mensagem..." 
-            className="flex-1 border rounded-lg px-3 py-2"
+            className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onKeyPress={(e) => {
               if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                 handleSendMessage(e.currentTarget.value.trim())
@@ -146,7 +146,7 @@ export function ChatContainer({
             }}
           />
           <button 
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
             onClick={() => {
               const input = document.querySelector('input[type="text"]') as HTMLInputElement
               if (input && input.value.trim()) {
