@@ -19,14 +19,38 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   (config: AxiosRequestConfig): any => {
     // Add auth token to requests
-    // const authStore = useAuthStore.getState()
-    // const token = authStore.user?.accessToken
+    // Get token from localStorage (where Zustand persist stores it)
+    let token = null
     
-    // TODO: Get token from cookies or other storage method
-    const token = null
+    try {
+      // Try to get from localStorage first (direct token storage)
+      token = localStorage.getItem('access_token')
+      
+      // If not found, try from Zustand store in localStorage
+      if (!token) {
+        const storedAuth = localStorage.getItem('auth-store')
+        if (storedAuth) {
+          const authData = JSON.parse(storedAuth)
+          token = authData.state?.user?.access_token || authData.state?.user?.accessToken
+        }
+      }
+      
+      // If still not found, try cookies as fallback
+      if (!token && typeof document !== 'undefined') {
+        token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('access_token='))
+          ?.split('=')[1]
+      }
+    } catch (error) {
+      console.warn('Error getting auth token:', error)
+    }
     
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
+      console.log('🔑 Token adicionado ao header:', token.substring(0, 20) + '...')
+    } else {
+      console.warn('⚠️ Nenhum token encontrado para autenticação')
     }
 
     // Add request timestamp for debugging
@@ -113,9 +137,9 @@ apiClient.interceptors.response.use(
       //   }
       // }
       
-      // For now, just redirect to login
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/login')) {
-        window.location.href = '/auth/login'
+      // For now, just redirect to signin
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/auth/signin')) {
+        window.location.href = '/auth/signin'
       }
     }
 

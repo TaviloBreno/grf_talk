@@ -177,7 +177,7 @@ export const useAuthStore = create<AuthState>()(
           console.log('📥 Store: Resultado recebido:', result)
 
           if (result.success && result.user) {
-            console.log('✅ Store: Definindo usuário como autenticado')
+            console.log('✅ Store: Login bem-sucedido, atualizando estado...')
             const newState = {
               user: result.user,
               isAuthenticated: true,
@@ -185,14 +185,28 @@ export const useAuthStore = create<AuthState>()(
               error: null,
             }
             console.log('📊 Store: Novo estado:', newState)
-            set(newState)
-            console.log('🎯 Store: Estado atualizado, isAuthenticated=true')
             
-            // Verificar se o estado foi realmente atualizado
+            // Atualizar estado
+            set(newState)
+            
+            // Aguardar um pouco e verificar se o estado foi persistido
             setTimeout(() => {
               const currentState = get()
-              console.log('🔍 Store: Estado atual após set:', { isAuthenticated: currentState.isAuthenticated, user: currentState.user?.name })
-            }, 10)
+              console.log('🔍 Store: Estado atual após set:', {
+                isAuthenticated: currentState.isAuthenticated, 
+                user: currentState.user?.name,
+                userId: currentState.user?.id
+              })
+              
+              // Verificar localStorage também
+              try {
+                const stored = localStorage.getItem('auth-store')
+                console.log('💾 Store: Dados no localStorage:', stored ? JSON.parse(stored) : 'nenhum')
+              } catch (e) {
+                console.log('❌ Store: Erro ao ler localStorage:', e)
+              }
+            }, 50)
+            
           } else {
             console.log('❌ Store: Login falhou, limpando estado')
             set({

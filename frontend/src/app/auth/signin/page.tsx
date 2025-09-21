@@ -53,7 +53,7 @@ export default function SignInPage() {
       setTimeout(() => {
         console.log('⏰ useEffect: Executando redirecionamento após timeout')
         router.replace('/chat')
-      }, 100)
+      }, 150)
     }
   }, [isAuthenticated, router])
 
@@ -132,20 +132,11 @@ export default function SignInPage() {
       
       console.log('✅ Form: Login concluído com sucesso')
       
-      // Verificar o estado após o login
+      // Aguardar um pouco para o estado atualizar e depois redirecionar
       setTimeout(() => {
-        const { isAuthenticated: newAuth } = useAuthStore.getState()
-        console.log('🔄 Form: Estado após login:', { newAuth })
-        
-        // Forçar redirecionamento se não acontecer automaticamente
-        if (newAuth && !hasRedirected.current) {
-          console.log('🚨 Form: Forçando redirecionamento manual')
-          hasRedirected.current = true
-          router.replace('/chat')
-        }
-      }, 200)
-      
-      // O redirecionamento será feito pelo useEffect quando isAuthenticated mudar
+        console.log('🚨 Form: Redirecionamento forçado após login')
+        router.replace('/chat')
+      }, 100)
       
     } catch (error: any) {
       console.error('❌ Form: Erro ao fazer login:', error)

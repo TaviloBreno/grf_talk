@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { useAuthStore } from '@/stores/auth-store'
@@ -149,13 +149,53 @@ export function ChatHeader({ onToggleSidebar, onNewChat, isMobile = false }: Cha
 // Componente para o conteúdo do diálogo de nova conversa
 function NewChatContent({ onClose }: { onClose: () => void }) {
   const { setActiveChat } = useChatStore()
+  const { user: currentUser } = useAuthStore()
   const [isCreating, setIsCreating] = useState(false)
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Maria Santos', email: 'user2@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=MS&size=200&background=85e68e&color=ffffff&bold=true&format=png', initials: 'MS' },
-    { id: 2, name: 'Pedro Oliveira', email: 'user3@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=PO&size=200&background=856be6&color=ffffff&bold=true&format=png', initials: 'PO' },
-    { id: 3, name: 'Usuário Teste', email: 'teste@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=UT&size=200&background=e68885&color=ffffff&bold=true&format=png', initials: 'UT' },
-    { id: 4, name: 'Super Admin', email: 'admin@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=SA&size=200&background=f39c12&color=ffffff&bold=true&format=png', initials: 'SA' },
-  ])
+  const [users, setUsers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Carregar usuários da API
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true)
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1'
+        const accessToken = localStorage.getItem('access_token')
+        
+        const response = await fetch(`${apiUrl}/users/`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          // Filtrar o usuário atual da lista
+          const filteredUsers = data.results?.filter((user: any) => 
+            user.email !== currentUser?.email && user.id !== currentUser?.id
+          ) || []
+          setUsers(filteredUsers)
+        } else {
+          console.error('Erro ao carregar usuários:', response.status)
+          // Fallback para usuários mockados (sem o usuário atual)
+          const mockUsers = [
+            { id: 1, name: 'Maria Santos', email: 'user2@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=MS&size=200&background=85e68e&color=ffffff&bold=true&format=png', initials: 'MS' },
+            { id: 2, name: 'Pedro Oliveira', email: 'user3@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=PO&size=200&background=856be6&color=ffffff&bold=true&format=png', initials: 'PO' },
+            { id: 3, name: 'Usuário Teste', email: 'teste@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=UT&size=200&background=e68885&color=ffffff&bold=true&format=png', initials: 'UT' },
+            { id: 4, name: 'Super Admin', email: 'admin@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=SA&size=200&background=f39c12&color=ffffff&bold=true&format=png', initials: 'SA' },
+          ].filter(user => user.email !== currentUser?.email)
+          setUsers(mockUsers)
+        }
+      } catch (error) {
+        console.error('Erro ao carregar usuários:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadUsers()
+  }, [currentUser])
 
   const startChat = async (selectedUser: any) => {
     if (isCreating) return
@@ -244,27 +284,39 @@ function NewChatContent({ onClose }: { onClose: () => void }) {
       </div>
       
       <div className="space-y-2 max-h-60 overflow-y-auto">
-        {users.map((user) => (
-          <div
-            key={user.id}
-            className={`flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors ${
-              isCreating ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            onClick={() => !isCreating && startChat(user)}
-          >
-            <Avatar>
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>{user.initials}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="font-medium">{user.name}</p>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
-            </div>
-            {isCreating && (
-              <div className="text-xs text-muted-foreground">Criando...</div>
-            )}
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <span className="ml-2 text-sm text-muted-foreground">Carregando usuários...</span>
           </div>
-        ))}
+        ) : users.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">Nenhum usuário disponível</p>
+          </div>
+        ) : (
+          users.map((user) => (
+            <div
+              key={user.id}
+              className={`flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer transition-colors ${
+                isCreating ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              onClick={() => !isCreating && startChat(user)}
+            >
+              <Avatar>
+                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarFallback>{user.name?.charAt(0) || user.email?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <p className="font-medium">{user.name || user.email}</p>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
+              </div>
+              {isCreating && (
+                <div className="text-xs text-muted-foreground">Criando...</div>
+              )}
+            </div>
+          ))
+        )}
       </div>
     </div>
   )
