@@ -34,13 +34,26 @@ class ChatMessagesView(BaseView):
             deleted_at__isnull=True
         ).order_by('created_at')
         
+        print(f"🔍 [DEBUG] GET /api/chats/{chat_id}/messages/ - Found {messages.count()} messages")
+        print(f"🔍 [DEBUG] SQL Query: {messages.query}")
+        for msg in messages:
+            print(f"🔍 [DEBUG] Message {msg.id}: '{msg.body}' from {msg.from_user.name} ({msg.from_user.id}) at {msg.created_at}")
+        
         # Serializar mensagens
         serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
+        print(f"🔍 [DEBUG] Serialized {len(serializer.data)} messages")
         
         # Marcar mensagens como recebidas pelo usuário logado
         self.mark_messages_as_received(chat_id, request.user.id)
         
-        return Response(serializer.data)
+        # Retornar em formato paginado para compatibilidade com o frontend
+        return Response({
+            'data': serializer.data,
+            'total': len(serializer.data),
+            'page': 1,
+            'pages': 1,
+            'per_page': 50
+        })
     
     def post(self, request, chat_id):
         """

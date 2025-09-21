@@ -32,11 +32,17 @@ export function ChatContainer({
   useEffect(() => {
     if (!chat?.id) return
 
+    console.log(`[ChatContainer] Iniciando polling para chat ${chat.id}`)
+    
     const interval = setInterval(() => {
+      console.log(`[ChatContainer] Polling: verificando novas mensagens para chat ${chat.id}`)
       loadMessages(chat.id)
-    }, 5000) // Check for new messages every 5 seconds
+    }, 3000) // Check for new messages every 3 seconds
 
-    return () => clearInterval(interval)
+    return () => {
+      console.log(`[ChatContainer] Parando polling para chat ${chat.id}`)
+      clearInterval(interval)
+    }
   }, [chat?.id, loadMessages])
   
   // Get messages for the active chat
