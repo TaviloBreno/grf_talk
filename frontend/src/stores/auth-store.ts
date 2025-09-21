@@ -16,9 +16,23 @@ async function makeApiRequest(endpoint: string, options: RequestInit = {}) {
   })
 
   const data = await response.json()
+  
+  // Debug logging
+  console.log('🔍 makeApiRequest:', {
+    url: `${apiUrl}${endpoint}`,
+    status: response.status,
+    ok: response.ok,
+    statusText: response.statusText,
+    data: data
+  })
 
   if (!response.ok) {
-    throw new Error(data.message || 'Ocorreu um erro inesperado')
+    console.error('❌ makeApiRequest failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: data
+    })
+    throw new Error(data.message || data.detail || 'Ocorreu um erro inesperado')
   }
 
   return data
@@ -178,6 +192,7 @@ export const useAuthStore = create<AuthState>()(
 
           if (result.success && result.user) {
             console.log('✅ Store: Login bem-sucedido, atualizando estado...')
+            
             const newState = {
               user: result.user,
               isAuthenticated: true,
