@@ -212,32 +212,39 @@ export const useChatStore = create<ChatStoreState>()(
           console.log(`[ChatStore] Carregando mensagens para chat ${chatId}, página ${page}`)
           const response = await chatApi.getMessages(chatId, { page, limit: 50 })
           
-          if (response.success && response.data) {
-            const messages = response.data.data
-            console.log(`[ChatStore] Recebidas ${messages.length} mensagens:`, messages)
-
-            set((state) => {
-              const previousCount = state.messages[chatId]?.length || 0
-              if (page === 1) {
-                // First page, replace all messages
-                state.messages[chatId] = messages
-              } else {
-                // Additional pages, prepend to existing messages
-                state.messages[chatId] = [
-                  ...messages,
-                  ...(state.messages[chatId] || [])
-                ]
-              }
-              const newCount = state.messages[chatId]?.length || 0
-              console.log(`[ChatStore] Mensagens atualizadas: ${previousCount} → ${newCount}`)
-            })
-          } else {
-            const errorMessage = response.message || 'Erro ao carregar mensagens'
-            console.error(`[ChatStore] Erro na resposta:`, response)
-            set((state) => {
-              state.error = errorMessage
-            })
+          console.log(`[ChatStore] Resposta da API:`, response)
+          
+          // O backend retorna dados diretamente, não em formato { success, data }
+          let messages = []
+          
+          if (response.data && Array.isArray(response.data)) {
+            // Backend retorna array direto
+            messages = response.data
+          } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+            // Backend retorna formato paginado
+            messages = response.data.data
+          } else if (response && Array.isArray(response)) {
+            // Resposta é array direto
+            messages = response
           }
+          
+          console.log(`[ChatStore] Recebidas ${messages.length} mensagens:`, messages)
+
+          set((state) => {
+            const previousCount = state.messages[chatId]?.length || 0
+            if (page === 1) {
+              // First page, replace all messages
+              state.messages[chatId] = messages
+            } else {
+              // Additional pages, prepend to existing messages
+              state.messages[chatId] = [
+                ...messages,
+                ...(state.messages[chatId] || [])
+              ]
+            }
+            const newCount = state.messages[chatId]?.length || 0
+            console.log(`[ChatStore] Mensagens atualizadas: ${previousCount} → ${newCount}`)
+          })
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar mensagens'
           console.error(`[ChatStore] Erro ao carregar mensagens:`, error)
