@@ -42,9 +42,18 @@ export default function ChatPage() {
       await new Promise(resolve => setTimeout(resolve, 100))
       setIsInitialized(true)
       
+      console.log('🔍 Chat Page Debug:', {
+        isAuthenticated,
+        user: user?.email || 'No user',
+        isLoading,
+        isInitialized: true
+      })
+      
       if (!isAuthenticated && !user) {
+        console.log('❌ Not authenticated, redirecting to signin')
         router.push('/auth/signin')
       } else {
+        console.log('✅ Authenticated, loading chats')
         // Carregar chats quando usuário está autenticado
         loadChats()
       }
@@ -53,8 +62,18 @@ export default function ChatPage() {
     initializeAuth()
   }, [])
 
-  // Mostrar loading enquanto não inicializou ou está carregando
-  if (!isInitialized || isLoading) {
+  // Debug atual do estado
+  console.log('🔍 Chat Page Current State:', {
+    isInitialized,
+    isLoading,
+    isAuthenticated,
+    user: user?.email || 'No user',
+    chatList: chatList.length
+  })
+
+  // Mostrar loading enquanto não inicializou - REMOVENDO VERIFICAÇÃO DE isLoading TEMPORARIAMENTE
+  if (!isInitialized) {
+    console.log('⏳ Showing loading screen:', { isInitialized })
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -65,6 +84,7 @@ export default function ChatPage() {
 
   // Se não está autenticado após inicialização, mostrar loading (será redirecionado)
   if (!isAuthenticated && !user) {
+    console.log('🚫 Not authenticated after init, showing redirect screen')
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
