@@ -1,0 +1,50 @@
+{
+  "testUser": {
+    "email": "test@example.com",
+    "password": "testpass123",
+    "name": "Test User"
+  },
+  "testUser2": {
+    "email": "test2@example.com", 
+    "password": "testpass123",
+    "name": "Test User 2"
+  },
+  "testChat": {
+    "id": "1",
+    "title": "Test Chat",
+    "type": "private",
+    "user": {
+      "id": "2",
+      "name": "Test User 2",
+      "email": "test2@example.com",
+      "avatar": "https://ui-avatars.com/api/?name=TU&size=200"
+    },
+    "last_message": {
+      "id": "1",
+      "body": "Hello, this is a test message",
+      "created_at": "2025-09-21T18:00:00Z",
+      "from_user": {
+        "id": "2",
+        "name": "Test User 2"
+      }
+    },
+    "unseen_count": 0,
+    "created_at": "2025-09-21T17:00:00Z"
+  },
+  "testMessage": {
+    "id": "1",
+    "body": "Hello, this is a test message",
+    "chat": 1,
+    "from_user": {
+      "id": "1",
+      "name": "Test User",
+      "email": "test@example.com",
+      "avatar": "https://ui-avatars.com/api/?name=TU&size=200"
+    },
+    "attachment": null,
+    "viewed_at": null,
+    "created_at": "2025-09-21T18:00:00Z",
+    "updated_at": "2025-09-21T18:00:00Z",
+    "isEdited": false
+  }
+}
