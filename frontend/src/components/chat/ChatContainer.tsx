@@ -104,7 +104,7 @@ export function ChatContainer({
                 key={message.id}
                 message={message}
                 currentUser={currentUser}
-                isOwn={message.sender?.id === currentUser.id}
+                isOwn={message.from_user?.id === currentUser.id}
                 showAvatar={true}
                 showTimestamp={true}
               />

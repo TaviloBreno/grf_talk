@@ -79,19 +79,27 @@ export interface ChatSettings {
 
 export interface Message {
   id: string
-  chatId: string
-  senderId: string
-  sender: User
-  content: string
-  type: MessageType
-  status: MessageStatus
-  attachments: MessageAttachment[]
+  chat: number
+  body: string
+  from_user: User
+  attachment?: any
+  viewed_at?: string
+  created_at: string
+  
+  // Legacy fields for backward compatibility
+  chatId?: string
+  senderId?: string
+  sender?: User
+  content?: string
+  type?: MessageType
+  status?: MessageStatus
+  attachments?: MessageAttachment[]
   replyTo?: string
-  reactions: MessageReaction[]
-  isEdited: boolean
-  isDeleted: boolean
-  createdAt: Date
-  updatedAt: Date
+  reactions?: MessageReaction[]
+  isEdited?: boolean
+  isDeleted?: boolean
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export type MessageType = 

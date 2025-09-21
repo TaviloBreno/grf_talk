@@ -66,6 +66,9 @@ export function MessageItem({
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
+  // Helper function to get message content from backend structure
+  const getMessageContent = () => message.body || message.content || ''
+
   const formatTime = (date: Date) => {
     return new Intl.DateTimeFormat('pt-BR', {
       hour: '2-digit',
@@ -126,7 +129,7 @@ export function MessageItem({
   }
 
   const handleCopyMessage = () => {
-    navigator.clipboard.writeText(message.content)
+    navigator.clipboard.writeText(getMessageContent())
   }
 
   const handleAudioPlayPause = () => {
@@ -155,7 +158,7 @@ export function MessageItem({
         return (
           <div className="prose prose-sm max-w-none dark:prose-invert">
             <p className="whitespace-pre-wrap break-words">
-              {message.content}
+              {getMessageContent()}
             </p>
           </div>
         )
@@ -163,7 +166,7 @@ export function MessageItem({
       case 'image':
         return (
           <div className="space-y-2">
-            {message.attachments.map((attachment) => (
+            {message.attachments?.map((attachment) => (
               <div key={attachment.id} className="relative group">
                 <img
                   src={attachment.url}
@@ -190,7 +193,7 @@ export function MessageItem({
         )
 
       case 'audio':
-        const audioAttachment = message.attachments[0]
+        const audioAttachment = message.attachments?.[0]
         return (
           <div className="flex items-center space-x-3 bg-gray-100 dark:bg-gray-700 rounded-lg p-3 max-w-sm">
             <Button
@@ -230,7 +233,7 @@ export function MessageItem({
       case 'file':
         return (
           <div className="space-y-2">
-            {message.attachments.map((attachment) => (
+            {message.attachments?.map((attachment) => (
               <div
                 key={attachment.id}
                 className="flex items-center space-x-3 bg-gray-100 dark:bg-gray-700 rounded-lg p-3 max-w-sm cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -256,9 +259,9 @@ export function MessageItem({
                 <Download className="h-4 w-4 text-gray-400" />
               </div>
             ))}
-            {message.content && (
+            {getMessageContent() && (
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                {message.content}
+                {getMessageContent()}
               </p>
             )}
           </div>
@@ -268,7 +271,7 @@ export function MessageItem({
         return (
           <div className="text-center">
             <Badge variant="secondary" className="text-xs">
-              {message.content}
+              {getMessageContent()}
             </Badge>
           </div>
         )
@@ -276,7 +279,7 @@ export function MessageItem({
       default:
         return (
           <p className="text-sm text-gray-600 dark:text-gray-300">
-            {message.content}
+            {getMessageContent()}
           </p>
         )
     }
@@ -344,9 +347,9 @@ export function MessageItem({
       {showAvatar && !isGrouped && (
         <div className="shrink-0">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={message.sender.avatar} alt={message.sender.name} />
+            <AvatarImage src={message.from_user?.avatar} alt={message.from_user?.name} />
             <AvatarFallback className="bg-blue-500 text-white text-xs">
-              {getInitials(message.sender.name)}
+              {getInitials(message.from_user?.name || 'U')}
             </AvatarFallback>
           </Avatar>
         </div>
@@ -364,11 +367,11 @@ export function MessageItem({
             isOwn && 'flex-row-reverse'
           )}>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
-              {isOwn ? 'Você' : message.sender.name}
+              {isOwn ? 'Você' : message.from_user?.name}
             </span>
             {showTimestamp && (
               <span className="text-xs text-gray-500">
-                {formatTime(message.createdAt)}
+                {formatTime(message.created_at ? new Date(message.created_at) : new Date())}
               </span>
             )}
           </div>
@@ -395,7 +398,7 @@ export function MessageItem({
             )}
             
             {showTimestamp && isGrouped && (
-              <span>{formatTime(message.createdAt)}</span>
+              <span>{formatTime(message.created_at ? new Date(message.created_at) : new Date())}</span>
             )}
             
             {getDeliveryIcon()}
