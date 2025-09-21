@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { MessageSquarePlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ChatFooter from './ChatFooter'
@@ -102,19 +103,55 @@ export function ChatContainer({
   // Get messages for the active chat
   const chatMessages = chat?.id ? messages[chat.id] || [] : []
   
-  // Get other participant info (based on ChatList implementation)
-  const participantName = chat?.name || chat?.title || 'Chat'
+  // Get other participant info from the 'user' field returned by ChatSerializer
+  const getOtherParticipant = (chat: any) => {
+    if (!chat) return null
+    
+    // The backend ChatSerializer returns a 'user' field with the other participant's info
+    if (chat.user) {
+      return {
+        name: chat.user.name || 'Usuário',
+        avatar: chat.user.avatar || chat.user.avatar_url
+      }
+    }
+    
+    // Fallback for group chats or other types
+    if (chat.type === 'group' || chat.type === 'channel') {
+      return {
+        name: chat.title || 'Grupo sem nome',
+        avatar: undefined
+      }
+    }
+    
+    return {
+      name: 'Chat',
+      avatar: undefined
+    }
+  }
+
+  const participantInfo = getOtherParticipant(chat)
+  const participantName = participantInfo?.name || 'Chat'
+  const participantAvatar = participantInfo?.avatar
+
+  // Debug log para verificar estrutura do chat
+  useEffect(() => {
+    if (chat) {
+      console.log('🔍 Chat atual:', chat)
+      console.log('👤 Participant info:', participantInfo)
+    }
+  }, [chat, participantInfo])
 
   return (
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       {/* Chat Header */}
       <div className="flex items-center justify-between p-4 border-b bg-card flex-shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-primary-foreground font-semibold text-sm">
+          <Avatar className="w-8 h-8">
+            <AvatarImage src={participantAvatar} alt={participantName} />
+            <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
               {participantName?.[0]?.toUpperCase() || 'C'}
-            </span>
-          </div>
+            </AvatarFallback>
+          </Avatar>
           <div>
             <h3 className="font-semibold text-sm">{participantName}</h3>
             <p className="text-xs text-muted-foreground">Online</p>
