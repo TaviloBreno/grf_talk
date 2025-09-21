@@ -22,7 +22,7 @@ class ChatMessagesView(BaseView):
             Response: Lista de mensagens serializadas
         """
         # Verificar se chat existe e pertence ao usuário
-        if not self.chat_belongs_to_user(chat_id, request.user.id):
+        if not self.user_can_access_chat(chat_id, request.user.id):
             return Response(
                 {'error': 'Chat não encontrado ou você não tem permissão para acessá-lo'}, 
                 status=404
@@ -53,7 +53,7 @@ class ChatMessagesView(BaseView):
             Response: Mensagem criada serializada
         """
         # Verificar se chat existe e pertence ao usuário
-        if not self.chat_belongs_to_user(chat_id, request.user.id):
+        if not self.user_can_access_chat(chat_id, request.user.id):
             return Response(
                 {'error': 'Chat não encontrado ou você não tem permissão para acessá-lo'}, 
                 status=404

@@ -23,7 +23,7 @@ class ChatMessageView(BaseView):
             Response: Mensagem serializada ou erro
         """
         # Verificar se chat existe e pertence ao usuário
-        if not self.chat_belongs_to_user(chat_id, request.user.id):
+        if not self.user_can_access_chat(chat_id, request.user.id):
             return Response(
                 {'error': 'Chat não encontrado ou você não tem permissão para acessá-lo'}, 
                 status=404
@@ -59,7 +59,7 @@ class ChatMessageView(BaseView):
             Response: Mensagem atualizada ou erro
         """
         # Verificar se chat existe e pertence ao usuário
-        if not self.chat_belongs_to_user(chat_id, request.user.id):
+        if not self.user_can_access_chat(chat_id, request.user.id):
             return Response(
                 {'error': 'Chat não encontrado ou você não tem permissão para acessá-lo'}, 
                 status=404
@@ -120,7 +120,7 @@ class ChatMessageView(BaseView):
             Response: Mensagem atualizada ou erro
         """
         # Verificar se chat existe e pertence ao usuário
-        if not self.chat_belongs_to_user(chat_id, request.user.id):
+        if not self.user_can_access_chat(chat_id, request.user.id):
             return Response(
                 {'error': 'Chat não encontrado ou você não tem permissão para acessá-lo'}, 
                 status=404
@@ -176,7 +176,7 @@ class ChatMessageView(BaseView):
             Response: Confirmação da exclusão ou erro
         """
         # Verificar se chat existe e pertence ao usuário
-        if not self.chat_belongs_to_user(chat_id, request.user.id):
+        if not self.user_can_access_chat(chat_id, request.user.id):
             return Response(
                 {'error': 'Chat não encontrado ou você não tem permissão para acessá-lo'}, 
                 status=404

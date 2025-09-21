@@ -91,6 +91,23 @@ class BaseView(APIView):
         except Chat.DoesNotExist:
             raise ChatNotFound()
     
+    def user_can_access_chat(self, chat_id, user_id):
+        """
+        Verifica se usuário pode acessar o chat (retorna boolean).
+        
+        Args:
+            chat_id: ID do chat
+            user_id: ID do usuário logado
+            
+        Returns:
+            bool: True se usuário pode acessar, False caso contrário
+        """
+        try:
+            self.chat_belongs_to_user(chat_id, user_id)
+            return True
+        except ChatNotFound:
+            return False
+    
     def mark_messages_as_received(self, chat_id, user_id):
         """
         Marca mensagens do chat como visualizadas (atualiza viewed_at).
