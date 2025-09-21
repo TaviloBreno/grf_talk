@@ -52,13 +52,6 @@ class ChatMessagesView(BaseView):
         Returns:
             Response: Mensagem criada serializada
         """
-        # Verificar se chat existe e pertence ao usuário
-        if not self.user_can_access_chat(chat_id, request.user.id):
-            return Response(
-                {'error': 'Chat não encontrado ou você não tem permissão para acessá-lo'}, 
-                status=404
-            )
-        
         # Validar dados da mensagem
         body = request.data.get('body', '').strip()
         attachment_code = request.data.get('attachment_code')
@@ -91,8 +84,20 @@ class ChatMessagesView(BaseView):
                     status=404
                 )
         
-        # Obter chat
-        chat = Chat.objects.get(id=chat_id)
+        # Obter chat de forma segura
+        try:
+            chat = Chat.objects.get(id=chat_id, deleted_at__isnull=True)
+            # Verificar se usuário tem acesso
+            if chat.from_user_id != request.user.id and chat.to_user_id != request.user.id:
+                return Response(
+                    {'error': 'Chat não encontrado ou você não tem permissão para acessá-lo'}, 
+                    status=404
+                )
+        except Chat.DoesNotExist:
+            return Response(
+                {'error': 'Chat não encontrado'}, 
+                status=404
+            )
         
         # Criar mensagem
         message_data = {
