@@ -1,0 +1,5 @@
+export { AppearanceTab } from './AppearanceTab'
+export { NotificationsTab } from './NotificationsTab'
+export { PrivacyTab } from './PrivacyTab'
+export { MediaTab } from './MediaTab'
+export { AdvancedTab } from './AdvancedTab'

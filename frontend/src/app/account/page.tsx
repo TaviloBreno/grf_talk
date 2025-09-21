@@ -1,290 +1,576 @@
-'use client'
+'use client''use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useAuthStore } from '@/stores/auth-store'
-import { 
-  ArrowLeft, 
-  CheckCircle, 
-  AlertCircle, 
+
+
+import { useState, useEffect } from 'react'import { useState, useEffect } from 'react'
+
+import { useRouter } from 'next/navigation'import { useRouter } from 'next/navigation'
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'import { Button } from '@/components/ui/button'
+
+import { useAuthStore } from '@/stores/auth-store'import { Input } from '@/components/ui/input'
+
+import { User, Lock, Palette } from 'lucide-react'import { Label } from '@/components/ui/label'
+
+import { import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+  ProfileFormData, import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+
+  PasswordFormData, import { Alert, AlertDescription } from '@/components/ui/alert'
+
+  PreferencesData, import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
+  FormErrors import { Separator } from '@/components/ui/separator'
+
+} from '@/types/account'import { Switch } from '@/components/ui/switch'
+
+import { import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+  AccountHeader,import { useAuthStore } from '@/stores/auth-store'
+
+  ProfileTab, import { 
+
+  PasswordTab,   ArrowLeft, 
+
+  PreferencesTab   CheckCircle, 
+
+} from '@/components/account'  AlertCircle, 
+
   User, 
-  Mail, 
-  Lock, 
-  Save,
-  Camera,
-  Bell,
-  Shield,
-  Palette,
-  Globe,
-  Monitor,
-  Sun,
-  Moon
-} from 'lucide-react'
+
+/**  Mail, 
+
+ * Account Page Component  Lock, 
+
+ *   Save,
+
+ * Refactored for better maintainability:  Camera,
+
+ * - Separated concerns into focused tab components  Bell,
+
+ * - Reduced complexity from 812 lines to ~250 lines  Shield,
+
+ * - Improved modularity and testability  Palette,
+
+ * - Following SOLID principles  Globe,
+
+ */  Monitor,
+
+export default function AccountPage() {  Sun,
+
+  const router = useRouter()  Moon
+
+  const { user, updateProfile, changePassword, isLoading } = useAuthStore()} from 'lucide-react'
+
 import { cn } from '@/lib/utils'
-
-interface ProfileFormData {
-  name: string
-  email: string
-  avatar?: string
-}
-
-interface PasswordFormData {
-  currentPassword: string
-  newPassword: string
-  confirmPassword: string
-}
-
-interface PreferencesData {
-  theme: string
-  language: string
-  notifications: {
-    email: boolean
-    push: boolean
-    sound: boolean
-    desktop: boolean
-  }
-  privacy: {
-    showOnlineStatus: boolean
-    readReceipts: boolean
-    profileVisibility: string
-    lastSeenVisibility: string
-  }
-}
-
-interface FormErrors {
-  name?: string
-  email?: string
-  avatar?: string
-  currentPassword?: string
-  newPassword?: string
-  confirmPassword?: string
-}
-
-export default function AccountPage() {
-  const router = useRouter()
-  const { user, updateProfile, changePassword, isLoading } = useAuthStore()
 
   const [activeTab, setActiveTab] = useState('profile')
 
-  const [profileData, setProfileData] = useState<ProfileFormData>({
-    name: user?.name || '',
-    email: user?.email || '',
-    avatar: user?.avatar || ''
-  })
+  interface ProfileFormData {
 
-  const [passwordData, setPasswordData] = useState<PasswordFormData>({
-    currentPassword: '',
-    newPassword: '',
+  // Form data states  name: string
+
+  const [profileData, setProfileData] = useState<ProfileFormData>({  email: string
+
+    name: '',  avatar?: string
+
+    email: '',}
+
+    avatar: ''
+
+  })interface PasswordFormData {
+
+  currentPassword: string
+
+  const [passwordData, setPasswordData] = useState<PasswordFormData>({  newPassword: string
+
+    currentPassword: '',  confirmPassword: string
+
+    newPassword: '',}
+
     confirmPassword: ''
-  })
 
-  const [preferencesData, setPreferencesData] = useState<PreferencesData>({
-    theme: 'system',
-    language: 'pt',
-    notifications: {
-      email: true,
-      push: true,
-      sound: true,
-      desktop: false
-    },
-    privacy: {
-      showOnlineStatus: true,
-      readReceipts: true,
-      profileVisibility: 'everyone',
-      lastSeenVisibility: 'everyone'
+  })interface PreferencesData {
+
+  theme: string
+
+  const [preferencesData, setPreferencesData] = useState<PreferencesData>({  language: string
+
+    theme: 'system',  notifications: {
+
+    language: 'pt-BR',    email: boolean
+
+    notifications: {    push: boolean
+
+      email: true,    sound: boolean
+
+      push: true,    desktop: boolean
+
+      desktop: true,  }
+
+      sound: true  privacy: {
+
+    },    showOnlineStatus: boolean
+
+    privacy: {    readReceipts: boolean
+
+      showOnlineStatus: true,    profileVisibility: string
+
+      readReceipts: true,    lastSeenVisibility: string
+
+      profileVisibility: 'everyone',  }
+
+      lastSeenVisibility: 'everyone'}
+
     }
-  })
 
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  })interface FormErrors {
 
-  // Update profile data when user changes
+  name?: string
+
+  // UI states  email?: string
+
+  const [errors, setErrors] = useState<FormErrors>({})  avatar?: string
+
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)  currentPassword?: string
+
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)  newPassword?: string
+
+  confirmPassword?: string
+
+  // Update profile data when user changes}
+
   useEffect(() => {
-    if (user) {
-      setProfileData({
-        name: user.name || '',
+
+    if (user) {export default function AccountPage() {
+
+      setProfileData({  const router = useRouter()
+
+        name: user.name || '',  const { user, updateProfile, changePassword, isLoading } = useAuthStore()
+
         email: user.email || '',
-        avatar: user.avatar || ''
-      })
-    }
-  }, [user])
 
-  // Auto-clear messages after 5 seconds
-  useEffect(() => {
+        avatar: user.avatar || ''  const [activeTab, setActiveTab] = useState('profile')
+
+      })
+
+    }  const [profileData, setProfileData] = useState<ProfileFormData>({
+
+  }, [user])    name: user?.name || '',
+
+    email: user?.email || '',
+
+  // Auto-clear messages after 5 seconds    avatar: user?.avatar || ''
+
+  useEffect(() => {  })
+
     if (successMessage || errorMessage) {
-      const timer = setTimeout(() => {
-        setSuccessMessage(null)
-        setErrorMessage(null)
-      }, 5000)
+
+      const timer = setTimeout(() => {  const [passwordData, setPasswordData] = useState<PasswordFormData>({
+
+        setSuccessMessage(null)    currentPassword: '',
+
+        setErrorMessage(null)    newPassword: '',
+
+      }, 5000)    confirmPassword: ''
+
+  })
 
       return () => clearTimeout(timer)
+
+    }  const [preferencesData, setPreferencesData] = useState<PreferencesData>({
+
+  }, [successMessage, errorMessage])    theme: 'system',
+
+    language: 'pt',
+
+  // Clear all messages    notifications: {
+
+  const clearMessages = (): void => {      email: true,
+
+    setSuccessMessage(null)      push: true,
+
+    setErrorMessage(null)      sound: true,
+
+    setErrors({})      desktop: false
+
+  }    },
+
+    privacy: {
+
+  // Navigation handlers      showOnlineStatus: true,
+
+  const handleBack = (): void => {      readReceipts: true,
+
+    router.push('/chat')      profileVisibility: 'everyone',
+
+  }      lastSeenVisibility: 'everyone'
+
     }
+
+  // Profile handlers  })
+
+  const handleProfileChange = (field: keyof ProfileFormData, value: string): void => {
+
+    setProfileData(prev => ({ ...prev, [field]: value }))  const [errors, setErrors] = useState<FormErrors>({})
+
+    // Clear specific error when user starts typing  const [successMessage, setSuccessMessage] = useState<string | null>(null)
+
+    if (errors[field]) {  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+      setErrors(prev => ({ ...prev, [field]: '' }))
+
+    }  // Update profile data when user changes
+
+  }  useEffect(() => {
+
+    if (user) {
+
+  const validateProfileForm = (): boolean => {      setProfileData({
+
+    const newErrors: FormErrors = {}        name: user.name || '',
+
+        email: user.email || '',
+
+    if (!profileData.name.trim()) {        avatar: user.avatar || ''
+
+      newErrors.name = 'Nome é obrigatório'      })
+
+    } else if (profileData.name.trim().length < 2) {    }
+
+      newErrors.name = 'Nome deve ter pelo menos 2 caracteres'  }, [user])
+
+    }
+
+  // Auto-clear messages after 5 seconds
+
+    if (!profileData.email.trim()) {  useEffect(() => {
+
+      newErrors.email = 'Email é obrigatório'    if (successMessage || errorMessage) {
+
+    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {      const timer = setTimeout(() => {
+
+      newErrors.email = 'Email inválido'        setSuccessMessage(null)
+
+    }        setErrorMessage(null)
+
+      }, 5000)
+
+    setErrors(newErrors)
+
+    return Object.keys(newErrors).length === 0      return () => clearTimeout(timer)
+
+  }    }
+
   }, [successMessage, errorMessage])
 
-  const validateProfileForm = () => {
-    const newErrors: FormErrors = {}
+  const handleProfileSubmit = async (): Promise<void> => {
+
+    clearMessages()  const validateProfileForm = () => {
+
+        const newErrors: FormErrors = {}
+
+    if (!validateProfileForm()) return
 
     if (!profileData.name.trim()) {
-      newErrors.name = 'Nome é obrigatório'
-    } else if (profileData.name.trim().length < 2) {
-      newErrors.name = 'Nome deve ter pelo menos 2 caracteres'
-    }
 
-    if (!profileData.email.trim()) {
-      newErrors.email = 'Email é obrigatório'
+    try {      newErrors.name = 'Nome é obrigatório'
+
+      await updateProfile(profileData)    } else if (profileData.name.trim().length < 2) {
+
+      setSuccessMessage('Perfil atualizado com sucesso!')      newErrors.name = 'Nome deve ter pelo menos 2 caracteres'
+
+    } catch (error) {    }
+
+      setErrorMessage('Erro ao atualizar perfil. Tente novamente.')
+
+    }    if (!profileData.email.trim()) {
+
+  }      newErrors.email = 'Email é obrigatório'
+
     } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
-      newErrors.email = 'Email inválido'
+
+  // Password handlers      newErrors.email = 'Email inválido'
+
+  const handlePasswordChange = (field: keyof PasswordFormData, value: string): void => {    }
+
+    setPasswordData(prev => ({ ...prev, [field]: value }))
+
+    // Clear specific error when user starts typing    setErrors(newErrors)
+
+    if (errors[field]) {    return Object.keys(newErrors).length === 0
+
+      setErrors(prev => ({ ...prev, [field]: '' }))  }
+
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+  }  const validatePasswordForm = () => {
 
-  const validatePasswordForm = () => {
     const newErrors: FormErrors = {}
 
-    if (!passwordData.currentPassword) {
+  const validatePasswordForm = (): boolean => {
+
+    const newErrors: FormErrors = {}    if (!passwordData.currentPassword) {
+
       newErrors.currentPassword = 'Senha atual é obrigatória'
-    }
 
-    if (!passwordData.newPassword) {
+    if (!passwordData.currentPassword) {    }
+
+      newErrors.currentPassword = 'Senha atual é obrigatória'
+
+    }    if (!passwordData.newPassword) {
+
       newErrors.newPassword = 'Nova senha é obrigatória'
-    } else if (passwordData.newPassword.length < 6) {
-      newErrors.newPassword = 'Nova senha deve ter pelo menos 6 caracteres'
-    }
 
-    if (!passwordData.confirmPassword) {
-      newErrors.confirmPassword = 'Confirmação de senha é obrigatória'
-    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+    if (!passwordData.newPassword) {    } else if (passwordData.newPassword.length < 6) {
+
+      newErrors.newPassword = 'Nova senha é obrigatória'      newErrors.newPassword = 'Nova senha deve ter pelo menos 6 caracteres'
+
+    } else if (passwordData.newPassword.length < 8) {    }
+
+      newErrors.newPassword = 'Nova senha deve ter pelo menos 8 caracteres'
+
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/.test(passwordData.newPassword)) {    if (!passwordData.confirmPassword) {
+
+      newErrors.newPassword = 'Nova senha deve conter ao menos: 1 letra minúscula, 1 maiúscula, 1 número e 1 caractere especial'      newErrors.confirmPassword = 'Confirmação de senha é obrigatória'
+
+    }    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+
       newErrors.confirmPassword = 'Senhas não coincidem'
-    }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
+    if (!passwordData.confirmPassword) {    }
 
-  const handleProfileInputChange = (field: keyof ProfileFormData, value: string) => {
-    setProfileData(prev => ({
-      ...prev,
+      newErrors.confirmPassword = 'Confirmação de senha é obrigatória'
+
+    } else if (passwordData.newPassword !== passwordData.confirmPassword) {    setErrors(newErrors)
+
+      newErrors.confirmPassword = 'Senhas não conferem'    return Object.keys(newErrors).length === 0
+
+    }  }
+
+
+
+    setErrors(newErrors)  const handleProfileInputChange = (field: keyof ProfileFormData, value: string) => {
+
+    return Object.keys(newErrors).length === 0    setProfileData(prev => ({
+
+  }      ...prev,
+
       [field]: value
-    }))
 
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: undefined
-      }))
-    }
+  const handlePasswordSubmit = async (): Promise<void> => {    }))
 
     clearMessages()
-  }
 
-  const handlePasswordInputChange = (field: keyof PasswordFormData, value: string) => {
-    setPasswordData(prev => ({
-      ...prev,
-      [field]: value
-    }))
+        if (errors[field]) {
 
-    if (errors[field]) {
-      setErrors(prev => ({
+    if (!validatePasswordForm()) return      setErrors(prev => ({
+
         ...prev,
-        [field]: undefined
-      }))
-    }
 
-    clearMessages()
-  }
+    try {        [field]: undefined
 
-  const handlePreferencesChange = (section: keyof PreferencesData, field: string, value: any) => {
-    setPreferencesData(prev => ({
-      ...prev,
-      [section]: typeof prev[section] === 'object' && prev[section] !== null
-        ? { ...prev[section] as any, [field]: value }
-        : value
-    }))
-  }
+      await changePassword(passwordData.currentPassword, passwordData.newPassword)      }))
 
-  const clearMessages = () => {
-    if (successMessage) setSuccessMessage(null)
-    if (errorMessage) setErrorMessage(null)
-  }
-
-  const handleProfileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!validateProfileForm()) {
-      return
-    }
-
-    try {
-      await updateProfile({
-        name: profileData.name.trim(),
-        email: profileData.email.trim(),
-        avatar: profileData.avatar
-      })
-
-      setSuccessMessage('Perfil atualizado com sucesso!')
-    } catch (error: any) {
-      setErrorMessage(error.message || 'Erro ao atualizar perfil')
-    }
-  }
-
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!validatePasswordForm()) {
-      return
-    }
-
-    try {
-      await changePassword({
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-        confirmPassword: passwordData.confirmPassword
-      })
+      setSuccessMessage('Senha alterada com sucesso!')    }
 
       setPasswordData({
-        currentPassword: '',
-        newPassword: '',
+
+        currentPassword: '',    clearMessages()
+
+        newPassword: '',  }
+
         confirmPassword: ''
+
+      })  const handlePasswordInputChange = (field: keyof PasswordFormData, value: string) => {
+
+    } catch (error) {    setPasswordData(prev => ({
+
+      setErrorMessage('Erro ao alterar senha. Verifique sua senha atual.')      ...prev,
+
+    }      [field]: value
+
+  }    }))
+
+
+
+  // Preferences handlers    if (errors[field]) {
+
+  const handlePreferencesChange = (data: Partial<PreferencesData>): void => {      setErrors(prev => ({
+
+    setPreferencesData(prev => ({ ...prev, ...data }))        ...prev,
+
+  }        [field]: undefined
+
+      }))
+
+  const handlePreferencesSubmit = async (): Promise<void> => {    }
+
+    clearMessages()
+
+        clearMessages()
+
+    try {  }
+
+      // Save preferences to localStorage or API
+
+      localStorage.setItem('user-preferences', JSON.stringify(preferencesData))  const handlePreferencesChange = (section: keyof PreferencesData, field: string, value: any) => {
+
+      setSuccessMessage('Preferências salvas com sucesso!')    setPreferencesData(prev => ({
+
+    } catch (error) {      ...prev,
+
+      setErrorMessage('Erro ao salvar preferências. Tente novamente.')      [section]: typeof prev[section] === 'object' && prev[section] !== null
+
+    }        ? { ...prev[section] as any, [field]: value }
+
+  }        : value
+
+    }))
+
+  const tabs = [  }
+
+    {
+
+      id: 'profile',  const clearMessages = () => {
+
+      label: 'Perfil',    if (successMessage) setSuccessMessage(null)
+
+      icon: User,    if (errorMessage) setErrorMessage(null)
+
+      component: ProfileTab,  }
+
+      props: {
+
+        profileData,  const handleProfileSubmit = async (e: React.FormEvent) => {
+
+        onProfileChange: handleProfileChange,    e.preventDefault()
+
+        onProfileSubmit: handleProfileSubmit
+
+      }    if (!validateProfileForm()) {
+
+    },      return
+
+    {    }
+
+      id: 'password',
+
+      label: 'Senha',    try {
+
+      icon: Lock,      await updateProfile({
+
+      component: PasswordTab,        name: profileData.name.trim(),
+
+      props: {        email: profileData.email.trim(),
+
+        passwordData,        avatar: profileData.avatar
+
+        onPasswordChange: handlePasswordChange,      })
+
+        onPasswordSubmit: handlePasswordSubmit
+
+      }      setSuccessMessage('Perfil atualizado com sucesso!')
+
+    },    } catch (error: any) {
+
+    {      setErrorMessage(error.message || 'Erro ao atualizar perfil')
+
+      id: 'preferences',    }
+
+      label: 'Preferências',  }
+
+      icon: Palette,
+
+      component: PreferencesTab,  const handlePasswordSubmit = async (e: React.FormEvent) => {
+
+      props: {    e.preventDefault()
+
+        preferencesData,
+
+        onPreferencesChange: handlePreferencesChange,    if (!validatePasswordForm()) {
+
+        onPreferencesSubmit: handlePreferencesSubmit      return
+
+      }    }
+
+    }
+
+  ]    try {
+
+      await changePassword({
+
+  return (        currentPassword: passwordData.currentPassword,
+
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">        newPassword: passwordData.newPassword,
+
+      <AccountHeader onBack={handleBack} />        confirmPassword: passwordData.confirmPassword
+
       })
 
-      setSuccessMessage('Senha alterada com sucesso!')
-    } catch (error: any) {
-      setErrorMessage(error.message || 'Erro ao alterar senha')
-    }
-  }
+      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
 
-  const handlePreferencesSubmit = async () => {
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">      setPasswordData({
+
+          <TabsList className="grid w-full grid-cols-3">        currentPassword: '',
+
+            {tabs.map((tab) => (        newPassword: '',
+
+              <TabsTrigger        confirmPassword: ''
+
+                key={tab.id}      })
+
+                value={tab.id}
+
+                className="flex items-center gap-2"      setSuccessMessage('Senha alterada com sucesso!')
+
+              >    } catch (error: any) {
+
+                <tab.icon className="h-4 w-4" />      setErrorMessage(error.message || 'Erro ao alterar senha')
+
+                <span className="hidden sm:inline">{tab.label}</span>    }
+
+              </TabsTrigger>  }
+
+            ))}
+
+          </TabsList>  const handlePreferencesSubmit = async () => {
+
     try {
-      // Simulate API call to save preferences
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setSuccessMessage('Preferências salvas com sucesso!')
-    } catch (error: any) {
-      setErrorMessage('Erro ao salvar preferências')
-    }
-  }
 
-  const getUserInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
+          {tabs.map((tab) => (      // Simulate API call to save preferences
+
+            <TabsContent key={tab.id} value={tab.id}>      await new Promise(resolve => setTimeout(resolve, 1000))
+
+              <tab.component      
+
+                {...tab.props}      setSuccessMessage('Preferências salvas com sucesso!')
+
+                errors={errors}    } catch (error: any) {
+
+                successMessage={successMessage}      setErrorMessage('Erro ao salvar preferências')
+
+                errorMessage={errorMessage}    }
+
+                isLoading={isLoading}  }
+
+                onClearMessages={clearMessages}
+
+              />  const getUserInitials = (name: string) => {
+
+            </TabsContent>    return name
+
+          ))}      .split(' ')
+
+        </Tabs>      .map(n => n.charAt(0))
+
+      </div>      .join('')
+
+    </div>      .toUpperCase()
+
+  )      .slice(0, 2)
+
+}  }
 
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]

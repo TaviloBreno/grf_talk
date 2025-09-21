@@ -1,222 +1,440 @@
-'use client'
+'use client''use client'
 
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import { Slider } from '@/components/ui/slider'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
-import { 
-  Settings, 
-  Bell, 
-  Shield, 
-  Palette, 
-  Download, 
-  Trash2,
-  Volume2,
-  VolumeX,
+
+
+import { useState, useEffect } from 'react'import { useState, useEffect } from 'react'
+
+import { Button } from '@/components/ui/button'import { Button } from '@/components/ui/button'
+
+import {import { Input } from '@/components/ui/input'
+
+  Dialog,import { Label } from '@/components/ui/label'
+
+  DialogContent,import { Switch } from '@/components/ui/switch'
+
+  DialogHeader,import { Slider } from '@/components/ui/slider'
+
+  DialogTitle,import { Textarea } from '@/components/ui/textarea'
+
+  DialogTrigger,import {
+
+} from '@/components/ui/dialog'  Dialog,
+
+import {  DialogContent,
+
+  Tabs,  DialogHeader,
+
+  TabsContent,  DialogTitle,
+
+  TabsList,  DialogTrigger,
+
+  TabsTrigger,} from '@/components/ui/dialog'
+
+} from '@/components/ui/tabs'import {
+
+import {   Select,
+
+  Settings,   SelectContent,
+
+  Save,   SelectItem,
+
+  RotateCcw,   SelectTrigger,
+
+  Download,  SelectValue,
+
+  Palette,} from '@/components/ui/select'
+
+  Bell,import {
+
+  Shield,  Tabs,
+
+  Image,  TabsContent,
+
+  Cog  TabsList,
+
+} from 'lucide-react'  TabsTrigger,
+
+import { cn } from '@/lib/utils'} from '@/components/ui/tabs'
+
+import { ChatSettings, ChatSettingsProps, DEFAULT_SETTINGS } from '@/types/chat-settings'import { 
+
+import { SettingsService, SettingsApplicationService } from '@/services/settings-service'  Settings, 
+
+import {   Bell, 
+
+  AppearanceTab,   Shield, 
+
+  NotificationsTab,   Palette, 
+
+  PrivacyTab,   Download, 
+
+  MediaTab,   Trash2,
+
+  AdvancedTab   Volume2,
+
+} from './settings'  VolumeX,
+
   Eye,
-  EyeOff,
-  Clock,
-  MessageSquare,
-  Users,
-  Image,
-  FileText,
-  Save,
-  RotateCcw
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useChatStore } from '@/stores/chat'
-import { useAuthStore } from '@/stores/auth'
+
+/**  EyeOff,
+
+ * Chat Settings Dialog Component  Clock,
+
+ *   MessageSquare,
+
+ * Refactored for better maintainability:  Users,
+
+ * - Separated concerns into focused tab components  Image,
+
+ * - Reduced complexity from 664 lines to ~120 lines  FileText,
+
+ * - Improved modularity and testability  Save,
+
+ * - Following SOLID principles  RotateCcw
+
+ */} from 'lucide-react'
+
+export function ChatSettingsDialog({ chatId, className }: ChatSettingsProps) {import { cn } from '@/lib/utils'
+
+  const [isOpen, setIsOpen] = useState(false)import { useChatStore } from '@/stores/chat'
+
+  const [hasChanges, setHasChanges] = useState(false)import { useAuthStore } from '@/stores/auth'
+
+  const [settings, setSettings] = useState<ChatSettings>(DEFAULT_SETTINGS)
 
 interface ChatSettings {
-  // Appearance
-  theme: 'light' | 'dark' | 'system'
-  fontSize: number
-  messageSpacing: number
-  showAvatars: boolean
-  showTimestamps: boolean
+
+  // Load settings on component mount  // Appearance
+
+  useEffect(() => {  theme: 'light' | 'dark' | 'system'
+
+    const loadedSettings = SettingsService.loadSettings()  fontSize: number
+
+    setSettings(loadedSettings)  messageSpacing: number
+
+    SettingsApplicationService.applySettings(loadedSettings)  showAvatars: boolean
+
+  }, [])  showTimestamps: boolean
+
   compactMode: boolean
+
+  // Update setting handler  
+
+  const updateSetting = <K extends keyof ChatSettings>(  // Notifications
+
+    key: K,  enableNotifications: boolean
+
+    value: ChatSettings[K]  enableSounds: boolean
+
+  ): void => {  notificationSound: string
+
+    setSettings(prev => ({ ...prev, [key]: value }))  mutedChats: string[]
+
+    setHasChanges(true)  notifyOnMention: boolean
+
+  }  notifyOnDM: boolean
+
   
-  // Notifications
-  enableNotifications: boolean
-  enableSounds: boolean
-  notificationSound: string
-  mutedChats: string[]
-  notifyOnMention: boolean
-  notifyOnDM: boolean
+
+  // Save settings  // Privacy
+
+  const saveSettings = (): void => {  showOnlineStatus: boolean
+
+    SettingsService.saveSettings(settings)  showLastSeen: boolean
+
+    SettingsApplicationService.applySettings(settings)  showReadReceipts: boolean
+
+    setHasChanges(false)  allowGroupInvites: boolean
+
+  }  blockUnknownUsers: boolean
+
   
-  // Privacy
-  showOnlineStatus: boolean
-  showLastSeen: boolean
-  showReadReceipts: boolean
-  allowGroupInvites: boolean
-  blockUnknownUsers: boolean
-  
-  // Media
-  autoDownloadImages: boolean
-  autoDownloadFiles: boolean
-  maxFileSize: number
-  imageQuality: 'low' | 'medium' | 'high'
-  
-  // Advanced
+
+  // Reset settings to defaults  // Media
+
+  const resetSettings = (): void => {  autoDownloadImages: boolean
+
+    const defaultSettings = SettingsService.resetSettings()  autoDownloadFiles: boolean
+
+    setSettings(defaultSettings)  maxFileSize: number
+
+    SettingsApplicationService.applySettings(defaultSettings)  imageQuality: 'low' | 'medium' | 'high'
+
+    setHasChanges(false)  
+
+  }  // Advanced
+
   messageRetention: number // days
-  enableEncryption: boolean
-  backupEnabled: boolean
-  dataUsageOptimization: boolean
-}
 
-interface ChatSettingsProps {
-  chatId?: string
-  className?: string
-}
+  // Export settings  enableEncryption: boolean
 
-export function ChatSettingsDialog({ chatId, className }: ChatSettingsProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [hasChanges, setHasChanges] = useState(false)
-  const [settings, setSettings] = useState<ChatSettings>({
-    // Default settings
-    theme: 'system',
-    fontSize: 14,
-    messageSpacing: 8,
-    showAvatars: true,
-    showTimestamps: true,
-    compactMode: false,
-    
-    enableNotifications: true,
-    enableSounds: true,
-    notificationSound: 'default',
-    mutedChats: [],
-    notifyOnMention: true,
-    notifyOnDM: true,
-    
-    showOnlineStatus: true,
-    showLastSeen: true,
-    showReadReceipts: true,
-    allowGroupInvites: true,
-    blockUnknownUsers: false,
-    
-    autoDownloadImages: true,
-    autoDownloadFiles: false,
+  const exportSettings = (): void => {  backupEnabled: boolean
+
+    SettingsService.exportSettings(settings)  dataUsageOptimization: boolean
+
+  }}
+
+
+
+  const tabs = [interface ChatSettingsProps {
+
+    {  chatId?: string
+
+      id: 'appearance',  className?: string
+
+      label: 'Aparência',}
+
+      icon: Palette,
+
+      component: AppearanceTabexport function ChatSettingsDialog({ chatId, className }: ChatSettingsProps) {
+
+    },  const [isOpen, setIsOpen] = useState(false)
+
+    {  const [hasChanges, setHasChanges] = useState(false)
+
+      id: 'notifications',  const [settings, setSettings] = useState<ChatSettings>({
+
+      label: 'Notificações',    // Default settings
+
+      icon: Bell,    theme: 'system',
+
+      component: NotificationsTab    fontSize: 14,
+
+    },    messageSpacing: 8,
+
+    {    showAvatars: true,
+
+      id: 'privacy',    showTimestamps: true,
+
+      label: 'Privacidade',    compactMode: false,
+
+      icon: Shield,    
+
+      component: PrivacyTab    enableNotifications: true,
+
+    },    enableSounds: true,
+
+    {    notificationSound: 'default',
+
+      id: 'media',    mutedChats: [],
+
+      label: 'Mídia',    notifyOnMention: true,
+
+      icon: Image,    notifyOnDM: true,
+
+      component: MediaTab    
+
+    },    showOnlineStatus: true,
+
+    {    showLastSeen: true,
+
+      id: 'advanced',    showReadReceipts: true,
+
+      label: 'Avançado',    allowGroupInvites: true,
+
+      icon: Cog,    blockUnknownUsers: false,
+
+      component: AdvancedTab    
+
+    }    autoDownloadImages: true,
+
+  ]    autoDownloadFiles: false,
+
     maxFileSize: 50, // MB
-    imageQuality: 'medium',
-    
-    messageRetention: 30,
-    enableEncryption: true,
-    backupEnabled: true,
-    dataUsageOptimization: false
-  })
 
-  const { clearCache, optimizeCache } = useChatStore()
-  const { user } = useAuthStore()
+  return (    imageQuality: 'medium',
 
-  // Load settings from localStorage
-  useEffect(() => {
-    const savedSettings = localStorage.getItem('chat-settings')
-    if (savedSettings) {
-      try {
-        const parsed = JSON.parse(savedSettings)
-        setSettings(prev => ({ ...prev, ...parsed }))
-      } catch (error) {
-        console.error('Failed to load chat settings:', error)
-      }
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>    
+
+      <DialogTrigger asChild>    messageRetention: 30,
+
+        <Button     enableEncryption: true,
+
+          variant="ghost"     backupEnabled: true,
+
+          size="sm"     dataUsageOptimization: false
+
+          className={cn("gap-2", className)}  })
+
+          data-testid="settings-trigger"
+
+        >  const { clearCache, optimizeCache } = useChatStore()
+
+          <Settings className="h-4 w-4" />  const { user } = useAuthStore()
+
+          Configurações
+
+        </Button>  // Load settings from localStorage
+
+      </DialogTrigger>  useEffect(() => {
+
+          const savedSettings = localStorage.getItem('chat-settings')
+
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">    if (savedSettings) {
+
+        <DialogHeader>      try {
+
+          <DialogTitle className="flex items-center gap-2">        const parsed = JSON.parse(savedSettings)
+
+            <Settings className="h-5 w-5" />        setSettings(prev => ({ ...prev, ...parsed }))
+
+            Configurações do Chat      } catch (error) {
+
+          </DialogTitle>        console.error('Failed to load chat settings:', error)
+
+        </DialogHeader>      }
+
     }
-  }, [])
 
-  // Save settings to localStorage
-  const saveSettings = () => {
-    localStorage.setItem('chat-settings', JSON.stringify(settings))
-    setHasChanges(false)
-    
-    // Apply settings immediately
-    applySettings(settings)
-  }
+        <Tabs defaultValue="appearance" className="flex flex-col h-full">  }, [])
 
-  // Apply settings to the application
-  const applySettings = (newSettings: ChatSettings) => {
+          <TabsList className="grid w-full grid-cols-5">
+
+            {tabs.map((tab) => (  // Save settings to localStorage
+
+              <TabsTrigger   const saveSettings = () => {
+
+                key={tab.id}     localStorage.setItem('chat-settings', JSON.stringify(settings))
+
+                value={tab.id}    setHasChanges(false)
+
+                className="flex items-center gap-1 text-xs"    
+
+              >    // Apply settings immediately
+
+                <tab.icon className="h-3 w-3" />    applySettings(settings)
+
+                <span className="hidden sm:inline">{tab.label}</span>  }
+
+              </TabsTrigger>
+
+            ))}  // Apply settings to the application
+
+          </TabsList>  const applySettings = (newSettings: ChatSettings) => {
+
     // Theme
-    if (newSettings.theme !== 'system') {
-      document.documentElement.classList.toggle('dark', newSettings.theme === 'dark')
-    }
 
-    // Font size
-    document.documentElement.style.setProperty('--chat-font-size', `${newSettings.fontSize}px`)
-    
-    // Message spacing
-    document.documentElement.style.setProperty('--message-spacing', `${newSettings.messageSpacing}px`)
+          <div className="flex-1 overflow-y-auto p-1">    if (newSettings.theme !== 'system') {
 
-    // Compact mode
+            {tabs.map((tab) => (      document.documentElement.classList.toggle('dark', newSettings.theme === 'dark')
+
+              <TabsContent key={tab.id} value={tab.id} className="mt-0">    }
+
+                <tab.component
+
+                  settings={settings}    // Font size
+
+                  onUpdateSetting={updateSetting}    document.documentElement.style.setProperty('--chat-font-size', `${newSettings.fontSize}px`)
+
+                  hasChanges={hasChanges}    
+
+                />    // Message spacing
+
+              </TabsContent>    document.documentElement.style.setProperty('--message-spacing', `${newSettings.messageSpacing}px`)
+
+            ))}
+
+          </div>    // Compact mode
+
     document.documentElement.classList.toggle('compact-mode', newSettings.compactMode)
 
-    // Notification permissions
-    if (newSettings.enableNotifications && 'Notification' in window) {
-      Notification.requestPermission()
-    }
-  }
+          {/* Action Buttons */}
 
-  const updateSetting = <K extends keyof ChatSettings>(
-    key: K, 
-    value: ChatSettings[K]
-  ) => {
-    setSettings(prev => ({ ...prev, [key]: value }))
-    setHasChanges(true)
-  }
+          <div className="flex items-center justify-between gap-2 pt-4 border-t">    // Notification permissions
 
-  const resetSettings = () => {
-    const defaultSettings: ChatSettings = {
-      theme: 'system',
-      fontSize: 14,
-      messageSpacing: 8,
-      showAvatars: true,
-      showTimestamps: true,
-      compactMode: false,
+            <div className="flex gap-2">    if (newSettings.enableNotifications && 'Notification' in window) {
+
+              <Button      Notification.requestPermission()
+
+                variant="outline"    }
+
+                size="sm"  }
+
+                onClick={exportSettings}
+
+                className="flex items-center gap-1"  const updateSetting = <K extends keyof ChatSettings>(
+
+              >    key: K, 
+
+                <Download className="h-3 w-3" />    value: ChatSettings[K]
+
+                Exportar  ) => {
+
+              </Button>    setSettings(prev => ({ ...prev, [key]: value }))
+
+                  setHasChanges(true)
+
+              <Button  }
+
+                variant="outline"
+
+                size="sm"  const resetSettings = () => {
+
+                onClick={resetSettings}    const defaultSettings: ChatSettings = {
+
+                className="flex items-center gap-1 text-red-600 hover:text-red-700"      theme: 'system',
+
+              >      fontSize: 14,
+
+                <RotateCcw className="h-3 w-3" />      messageSpacing: 8,
+
+                Resetar      showAvatars: true,
+
+              </Button>      showTimestamps: true,
+
+            </div>      compactMode: false,
+
       
-      enableNotifications: true,
-      enableSounds: true,
-      notificationSound: 'default',
-      mutedChats: [],
-      notifyOnMention: true,
-      notifyOnDM: true,
-      
-      showOnlineStatus: true,
-      showLastSeen: true,
-      showReadReceipts: true,
-      allowGroupInvites: true,
-      blockUnknownUsers: false,
-      
-      autoDownloadImages: true,
-      autoDownloadFiles: false,
-      maxFileSize: 50,
-      imageQuality: 'medium',
-      
-      messageRetention: 30,
-      enableEncryption: true,
-      backupEnabled: true,
-      dataUsageOptimization: false
-    }
+
+            <div className="flex gap-2">      enableNotifications: true,
+
+              <Button      enableSounds: true,
+
+                variant="outline"      notificationSound: 'default',
+
+                onClick={() => setIsOpen(false)}      mutedChats: [],
+
+              >      notifyOnMention: true,
+
+                Cancelar      notifyOnDM: true,
+
+              </Button>      
+
+                    showOnlineStatus: true,
+
+              <Button      showLastSeen: true,
+
+                onClick={saveSettings}      showReadReceipts: true,
+
+                disabled={!hasChanges}      allowGroupInvites: true,
+
+                className="flex items-center gap-1"      blockUnknownUsers: false,
+
+              >      
+
+                <Save className="h-3 w-3" />      autoDownloadImages: true,
+
+                Salvar      autoDownloadFiles: false,
+
+              </Button>      maxFileSize: 50,
+
+            </div>      imageQuality: 'medium',
+
+          </div>      
+
+        </Tabs>      messageRetention: 30,
+
+      </DialogContent>      enableEncryption: true,
+
+    </Dialog>      backupEnabled: true,
+
+  )      dataUsageOptimization: false
+
+}    }
+
     
-    setSettings(defaultSettings)
+
+export default ChatSettingsDialog    setSettings(defaultSettings)
     setHasChanges(true)
   }
 
