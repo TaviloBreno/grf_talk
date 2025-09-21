@@ -412,17 +412,20 @@ export function MessageItem({
       </div>
 
       {/* Actions Menu */}
-      {isHovered && (
-        <div className={cn(
-          'opacity-0 group-hover:opacity-100 transition-opacity shrink-0 self-start',
-          isOwn ? 'order-first mr-2' : 'ml-2'
-        )}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+      <div className={cn(
+        'opacity-30 group-hover:opacity-100 transition-opacity shrink-0 self-start hover:opacity-100',
+        isOwn ? 'order-first mr-2' : 'ml-2'
+      )}>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
             
             <DropdownMenuContent align={isOwn ? 'end' : 'start'}>
               <DropdownMenuItem onClick={() => onReply?.(message)}>
@@ -461,7 +464,6 @@ export function MessageItem({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      )}
     </div>
   )
 }
