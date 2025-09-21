@@ -90,7 +90,7 @@ export type SendMessageFormData = z.infer<typeof sendMessageSchema>
 
 // Update message schema
 export const updateMessageSchema = z.object({
-  content: messageContentSchema,
+  body: messageContentSchema,
 })
 
 export type UpdateMessageFormData = z.infer<typeof updateMessageSchema>

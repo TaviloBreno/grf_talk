@@ -78,7 +78,7 @@ export function ChatContainer({
     const newContent = prompt('Editar mensagem:', message.body)
     if (newContent && newContent.trim() !== message.body) {
       try {
-        await updateMessage(chat.id, message.id, { content: newContent.trim() })
+        await updateMessage(chat.id, message.id, { body: newContent.trim() })
       } catch (error) {
         console.error('Erro ao editar mensagem:', error)
         alert('Erro ao editar mensagem')

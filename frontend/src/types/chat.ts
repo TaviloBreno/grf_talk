@@ -167,7 +167,7 @@ export interface SendMessageData {
 }
 
 export interface UpdateMessageData {
-  content: string
+  body: string
 }
 
 // Chat UI state types
