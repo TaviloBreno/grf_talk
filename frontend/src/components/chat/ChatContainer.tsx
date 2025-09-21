@@ -29,13 +29,13 @@ export function ChatContainer({
     }
   }, [chat?.id, loadMessages])
 
-  // Poll for new messages every 3 seconds when a chat is active
+  // Poll for new messages every 1 second when a chat is active
   useEffect(() => {
     if (!chat?.id) return
     
     const interval = setInterval(() => {
       loadMessages(chat.id)
-    }, 3000) // Check for new messages every 3 seconds
+    }, 1000) // Check for new messages every 1 second
 
     return () => {
       clearInterval(interval)

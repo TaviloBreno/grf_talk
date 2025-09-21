@@ -132,21 +132,17 @@ class ChatMessagesView(BaseView):
         
         # Emitir evento socket para o destinatário
         try:
-            socket.emit_to_user(to_user.id, 'new_message', {
-                'type': 'create',
-                'message': serializer.data,
-                'chat_id': chat_id
-            })
+            from core.events import emit_new_message
+            emit_new_message(to_user.id, serializer.data, chat_id)
         except Exception as e:
             pass  # Log error silently
         
         # Emitir evento de atualização do chat para o remetente
         try:
-            socket.emit_to_user(request.user.id, 'update_chat', {
-                'type': 'message_sent',
-                'chat_id': chat_id,
-                'message': serializer.data
-            })
+            from core.events import emit_chat_updated
+            from chats.serializers import ChatSerializer
+            chat_serializer = ChatSerializer(chat, context={'request': request})
+            emit_chat_updated(request.user.id, chat_serializer.data)
         except Exception as e:
             pass  # Log error silently
         

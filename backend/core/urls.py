@@ -18,12 +18,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from core.events import poll_events
 # from .views import SocketTestView, OnlineUsersView, socket_status
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/accounts/', include('accounts.urls')),
     path('api/v1/chats/', include('chats.urls')),
+    path('api/v1/events/poll/', poll_events, name='poll-events'),
     # path('api/v1/socket/test/', SocketTestView.as_view(), name='socket-test'),
     # path('api/v1/socket/online-users/', OnlineUsersView.as_view(), name='online-users'),
     # path('api/v1/socket/status/', socket_status, name='socket-status'),

@@ -99,11 +99,11 @@ class ChatMessageView(BaseView):
         to_user = chat.to_user if chat.from_user.id == request.user.id else chat.from_user
         
         # Emitir evento socket
-        socket.emit_to_user(to_user.id, 'message_updated', {
-            'type': 'update',
-            'message': serializer.data,
-            'chat_id': chat_id
-        })
+        try:
+            from core.events import emit_message_updated
+            emit_message_updated(to_user.id, serializer.data, chat_id)
+        except Exception as e:
+            pass  # Log error silently
         
         return Response(serializer.data)
     
@@ -205,11 +205,11 @@ class ChatMessageView(BaseView):
         to_user = chat.to_user if chat.from_user.id == request.user.id else chat.from_user
         
         # Emitir evento socket
-        socket.emit_to_user(to_user.id, 'message_deleted', {
-            'type': 'delete',
-            'message_id': message_id,
-            'chat_id': chat_id
-        })
+        try:
+            from core.events import emit_message_deleted
+            emit_message_deleted(to_user.id, message_id, chat_id)
+        except Exception as e:
+            pass  # Log error silently
         
         return Response(
             {'message': 'Mensagem deletada com sucesso'}, 
