@@ -17,6 +17,15 @@ export function ChatList({ onChatSelect }: ChatListProps) {
   const { chatList, activeChat, setActiveChat, messages, isLoading, error } = useChatStore()
   const { user } = useAuthStore()
 
+  // Debug: Log chat list
+  console.log('🔍 ChatList Debug:', { 
+    chatList, 
+    chatListLength: chatList?.length, 
+    isLoading, 
+    error,
+    user: user?.id 
+  })
+
   const handleChatClick = (chat: any) => {
     setActiveChat(chat)
     onChatSelect?.()

@@ -44,6 +44,10 @@ export function ChatContainer({
   // Get messages for the active chat
   const chatMessages = chat?.id ? messages[chat.id] || [] : []
   
+  // Get other participant info
+  const otherParticipant = chat?.user || chat?.to_user || chat?.from_user
+  const participantName = otherParticipant?.name || otherParticipant?.email || 'Chat'
+  
   // Early return if no chat or user
   if (!chat || !currentUser) {
     return (
@@ -94,14 +98,12 @@ export function ChatContainer({
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
             <span className="text-primary-foreground font-semibold text-sm">
-              {chat?.name?.[0]?.toUpperCase() || 'C'}
+              {participantName?.[0]?.toUpperCase() || 'C'}
             </span>
           </div>
           <div>
-            <h3 className="font-semibold text-sm">{chat?.name || 'Chat'}</h3>
-            <p className="text-xs text-muted-foreground">
-              {chat.participants?.length > 0 ? `${chat.participants.length} participantes` : 'Online'}
-            </p>
+            <h3 className="font-semibold text-sm">{participantName}</h3>
+            <p className="text-xs text-muted-foreground">Online</p>
           </div>
         </div>
       </div>
@@ -123,18 +125,40 @@ export function ChatContainer({
           ) : (
             <div className="text-center text-muted-foreground py-8">
               <p>Nenhuma mensagem ainda</p>
-              <p className="text-sm mt-2">Comece a conversar em {chat.name}</p>
+              <p className="text-sm mt-2">Comece a conversar com {participantName}</p>
             </div>
           )}
         </div>
       </ScrollArea>
 
       {/* Chat Footer */}
-      <ChatFooter
-        onSendMessage={handleSendMessage}
-        disabled={false}
-        placeholder={`Enviar mensagem para ${chat.name}...`}
-      />
+      <div className="mt-auto border-t bg-white p-4">
+        <div className="flex items-center space-x-2">
+          <input 
+            type="text" 
+            placeholder="Digite sua mensagem..." 
+            className="flex-1 border rounded-lg px-3 py-2"
+            onKeyPress={(e) => {
+              if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                handleSendMessage(e.currentTarget.value.trim())
+                e.currentTarget.value = ''
+              }
+            }}
+          />
+          <button 
+            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+            onClick={() => {
+              const input = document.querySelector('input[type="text"]') as HTMLInputElement
+              if (input && input.value.trim()) {
+                handleSendMessage(input.value.trim())
+                input.value = ''
+              }
+            }}
+          >
+            Enviar
+          </button>
+        </div>
+      </div>
 
       {/* Connection Status */}
       <ConnectionStatus />

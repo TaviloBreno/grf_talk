@@ -21,6 +21,15 @@ export default function ChatPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
 
+  // Debug: Log auth and chat state
+  console.log('🏠 Chat Page Debug:', { 
+    isAuthenticated, 
+    user: user?.id, 
+    isLoading, 
+    chatList: chatList?.length,
+    activeChat: activeChat?.id
+  })
+
   // Check mobile screen size
   useEffect(() => {
     const checkMobile = () => {

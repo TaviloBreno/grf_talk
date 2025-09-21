@@ -65,25 +65,30 @@ export const useChatStore = create<ChatStoreState>()(
       // Load user chats
       loadChats: async () => {
         try {
+          console.log('🔄 Loading chats...')
           set((state) => {
             state.isLoading = true
             state.error = null
           })
 
           const response = await chatApi.getChats({ page: 1, limit: 50 })
+          console.log('📦 Chat API response:', response)
           
           if (response.success) {
+            console.log('✅ Chats loaded successfully:', response.data)
             set((state) => {
               state.chatList = response.data?.data || []
               state.isLoading = false
             })
           } else {
+            console.log('❌ Failed to load chats:', response.message)
             set((state) => {
               state.error = response.message || 'Erro ao carregar chats'
               state.isLoading = false
             })
           }
         } catch (error) {
+          console.log('❌ Chat loading error:', error)
           const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar chats'
           set((state) => {
             state.error = errorMessage
