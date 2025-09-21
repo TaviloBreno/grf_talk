@@ -16,23 +16,15 @@ async function makeApiRequest(endpoint: string, options: RequestInit = {}) {
   })
 
   const data = await response.json()
-  
-  // Debug logging
-  console.log('🔍 makeApiRequest:', {
-    url: `${apiUrl}${endpoint}`,
-    status: response.status,
-    ok: response.ok,
-    statusText: response.statusText,
-    data: data
-  })
 
   if (!response.ok) {
     console.error('❌ makeApiRequest failed:', {
       status: response.status,
       statusText: response.statusText,
+      url: `${apiUrl}${endpoint}`,
       data: data
     })
-    throw new Error(data.message || data.detail || 'Ocorreu um erro inesperado')
+    throw new Error(data.message || data.detail || `Erro ${response.status}: ${response.statusText}`)
   }
 
   return data

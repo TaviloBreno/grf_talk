@@ -12,19 +12,19 @@ class Command(BaseCommand):
             {
                 'email': 'admin@grftalk.com',
                 'name': 'Super Admin',
-                'password': 'admin123',
+                'password': '123456',
                 'is_superuser': True
             },
             {
                 'email': 'user1@grftalk.com',
                 'name': 'João Silva',
-                'password': 'user123',
+                'password': '123456',
                 'is_superuser': False
             },
             {
                 'email': 'user2@grftalk.com',
                 'name': 'Maria Santos',
-                'password': 'user123',
+                'password': '123456',
                 'is_superuser': False
             },
             {

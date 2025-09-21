@@ -6,6 +6,8 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.core.files.storage import FileSystemStorage
 from django.conf import settings
 from django.utils.timezone import now
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .auth import Authentication
@@ -14,6 +16,7 @@ from .models import User
 from core.utils.exceptions import ValidationError
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class SignInView(APIView, Authentication):
     """View para autenticação de usuários."""
     
