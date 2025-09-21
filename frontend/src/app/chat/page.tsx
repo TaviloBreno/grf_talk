@@ -8,6 +8,7 @@ import { ChatContainer } from '@/components/chat/ChatContainer'
 import { ChatList } from '@/components/chat/ChatList'
 import { ChatFilters } from '@/components/chat/ChatFilters'
 import { ChatHeader } from '@/components/chat/ChatHeader'
+import { NewChatModal } from '@/components/chat/NewChatModal'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Button } from '@/components/ui/button'
 import { MessageSquarePlus, Menu, X } from 'lucide-react'
@@ -18,6 +19,7 @@ export default function ChatPage() {
   const { isAuthenticated, user, isLoading } = useAuthStore()
   const { chatList, activeChat, setActiveChat, loadChats } = useChatStore()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isInitialized, setIsInitialized] = useState(false)
 
@@ -94,8 +96,12 @@ export default function ChatPage() {
   }
 
   const handleNewChat = () => {
-    // Implementar lógica para novo chat
-    console.log('Novo chat')
+    setIsNewChatModalOpen(true)
+  }
+
+  const handleChatCreated = (chatId: string) => {
+    // O modal já cuida de selecionar o novo chat
+    console.log('Novo chat criado:', chatId)
   }
 
   const toggleSidebar = () => {
@@ -240,6 +246,13 @@ export default function ChatPage() {
           </ResizablePanel>
         </ResizablePanelGroup>
       )}
+
+      {/* New Chat Modal */}
+      <NewChatModal
+        open={isNewChatModalOpen}
+        onClose={() => setIsNewChatModalOpen(false)}
+        onChatCreated={handleChatCreated}
+      />
     </div>
   )
 }
