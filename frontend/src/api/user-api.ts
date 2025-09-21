@@ -20,7 +20,7 @@ import type {
 
 // User API requests
 export const userApi = {
-  // Get all users (admin only)
+  // Get all users
   getUsers: async (params?: {
     page?: number
     limit?: number
@@ -28,7 +28,7 @@ export const userApi = {
     role?: 'user' | 'admin'
   }): Promise<ApiResponse<PaginatedResponse<User>>> => {
     try {
-      const response = await apiClient.get('/users', { params })
+      const response = await apiClient.get('/accounts/users', { params })
       return response.data
     } catch (error) {
       throw handleApiError(error)

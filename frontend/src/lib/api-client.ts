@@ -90,7 +90,10 @@ apiClient.interceptors.response.use(
     if (process.env.NODE_ENV === 'development') {
       console.error(`❌ API Error: ${error.config?.method?.toUpperCase()} ${error.config?.url}`, {
         status: error.response?.status,
+        statusText: error.response?.statusText,
         data: error.response?.data,
+        headers: error.response?.headers,
+        requestData: error.config?.data,
         timestamp: new Date().toISOString(),
       })
     }
@@ -183,6 +186,9 @@ apiClient.interceptors.response.use(
 
 // Utility function to handle API errors
 export const handleApiError = (error: any) => {
+  // Log the full error for debugging
+  console.error('🔍 Full error details:', error)
+
   if (error.isNetworkError) {
     return {
       message: error.message,
@@ -204,13 +210,39 @@ export const handleApiError = (error: any) => {
     }
   }
 
-  if (error.response?.data) {
-    const { message, errors } = error.response.data
+  // Handle API errors with response
+  if (error.response) {
+    const data = error.response.data
+    const status = error.response.status
     
+    // Extract meaningful error message
+    let message = 'Ocorreu um erro inesperado'
+    let errors = {}
+    
+    if (typeof data === 'object' && data !== null) {
+      message = data.message || data.error || data.detail || message
+      errors = data.errors || data.fields || {}
+    } else if (typeof data === 'string') {
+      message = data
+    }
+    
+    // Handle specific status codes
+    if (status === 400) {
+      message = message || 'Dados inválidos enviados'
+    } else if (status === 401) {
+      message = 'Não autorizado - faça login novamente'
+    } else if (status === 403) {
+      message = 'Acesso negado'
+    } else if (status === 404) {
+      message = 'Recurso não encontrado'
+    } else if (status === 422) {
+      message = 'Erro de validação'
+    }
+
     return {
       message: message || 'Ocorreu um erro inesperado',
       errors: errors || {},
-      status: error.response.status,
+      status: status,
       type: 'api',
     }
   }

@@ -259,3 +259,32 @@ class AvatarView(APIView):
             'avatar_url': user.get_avatar_url(request),
             'has_custom_avatar': False
         })
+
+
+class UsersListView(APIView, Authentication):
+    """View para listar usuários disponíveis para conversa."""
+    
+    def get(self, request):
+        """
+        Retorna lista de usuários cadastrados (exceto o usuário atual).
+        """
+        # Obter todos os usuários exceto o atual
+        users = User.objects.exclude(id=request.user.id).order_by('name')
+        
+        # Serializar usuários
+        serializer = UserSerializer(users, many=True, context={'request': request})
+        
+        return Response({
+            'success': True,
+            'data': {
+                'data': serializer.data,
+                'pagination': {
+                    'page': 1,
+                    'limit': len(serializer.data),
+                    'total': len(serializer.data),
+                    'totalPages': 1,
+                    'hasNext': False,
+                    'hasPrev': False
+                }
+            }
+        })

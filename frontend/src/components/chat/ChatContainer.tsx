@@ -50,14 +50,29 @@ export function ChatContainer({
     if (!chat?.id || !content.trim()) return
     
     try {
-      console.log('🚀 Enviando mensagem:', { content, attachments })
+      console.log('🚀 Enviando mensagem:', { content, attachments, chatId: chat.id })
       await sendMessage(chat.id, {
         content: content.trim(),
         type: 'text',
         attachments: attachments || []
       })
+      console.log('✅ Mensagem enviada com sucesso')
     } catch (error) {
       console.error('❌ Erro ao enviar mensagem:', error)
+      
+      // Mostrar mensagem de erro mais específica
+      let errorMessage = 'Erro ao enviar mensagem'
+      if (error && typeof error === 'object') {
+        if ('message' in error && typeof error.message === 'string') {
+          errorMessage = error.message
+        } else if ('type' in error && error.type === 'api' && 'status' in error) {
+          const msg = 'message' in error && typeof error.message === 'string' ? error.message : 'Falha na API'
+          errorMessage = `Erro ${error.status}: ${msg}`
+        }
+      }
+      
+      // TODO: Mostrar toast ou notificação para o usuário
+      alert(errorMessage)
     }
   }
 

@@ -159,36 +159,34 @@ function NewChatContent({ onClose }: { onClose: () => void }) {
     const loadUsers = async () => {
       try {
         setLoading(true)
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1'
-        const accessToken = localStorage.getItem('access_token')
         
-        const response = await fetch(`${apiUrl}/users/`, {
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          }
-        })
+        // Usar userApi ao invés de fetch direto
+        const { userApi } = await import('@/api/user-api')
+        const response = await userApi.getUsers()
         
-        if (response.ok) {
-          const data = await response.json()
-          // Filtrar o usuário atual da lista
-          const filteredUsers = data.results?.filter((user: any) => 
+        if (response.success && response.data) {
+          console.log('📥 Usuários carregados:', response.data)
+          // Filtrar o usuário atual da lista - response.data.data contém o array de usuários
+          const allUsers = response.data.data || []
+          const filteredUsers = allUsers.filter((user: any) => 
             user.email !== currentUser?.email && user.id !== currentUser?.id
-          ) || []
+          )
           setUsers(filteredUsers)
         } else {
-          console.error('Erro ao carregar usuários:', response.status)
-          // Fallback para usuários mockados (sem o usuário atual)
-          const mockUsers = [
-            { id: 1, name: 'Maria Santos', email: 'user2@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=MS&size=200&background=85e68e&color=ffffff&bold=true&format=png', initials: 'MS' },
-            { id: 2, name: 'Pedro Oliveira', email: 'user3@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=PO&size=200&background=856be6&color=ffffff&bold=true&format=png', initials: 'PO' },
-            { id: 3, name: 'Usuário Teste', email: 'teste@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=UT&size=200&background=e68885&color=ffffff&bold=true&format=png', initials: 'UT' },
-            { id: 4, name: 'Super Admin', email: 'admin@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=SA&size=200&background=f39c12&color=ffffff&bold=true&format=png', initials: 'SA' },
-          ].filter(user => user.email !== currentUser?.email)
-          setUsers(mockUsers)
+          console.error('Erro ao carregar usuários da API')
+          throw new Error('Falha na resposta da API')
         }
       } catch (error) {
         console.error('Erro ao carregar usuários:', error)
+        
+        // Fallback para usuários mockados (sem o usuário atual)
+        const mockUsers = [
+          { id: 1, name: 'Maria Santos', email: 'user2@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=MS&size=200&background=85e68e&color=ffffff&bold=true&format=png' },
+          { id: 2, name: 'Pedro Oliveira', email: 'user3@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=PO&size=200&background=856be6&color=ffffff&bold=true&format=png' },
+          { id: 3, name: 'Usuário Teste', email: 'teste@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=UT&size=200&background=e68885&color=ffffff&bold=true&format=png' },
+          { id: 4, name: 'Super Admin', email: 'admin@grftalk.com', avatar: 'https://ui-avatars.com/api/?name=SA&size=200&background=f39c12&color=ffffff&bold=true&format=png' },
+        ].filter(user => user.email !== currentUser?.email)
+        setUsers(mockUsers)
       } finally {
         setLoading(false)
       }

@@ -158,12 +158,19 @@ export const chatApi = {
   // Send message
   sendMessage: async (chatId: string, data: SendMessageFormData): Promise<ApiResponse<Message>> => {
     try {
-      let requestData: unknown = data
+      // Converter 'content' para 'body' para compatibilidade com backend Django
+      let requestData: any = {
+        ...data,
+        body: data.content, // Backend espera 'body', não 'content'
+      }
+      
+      // Remover 'content' para evitar confusão
+      delete requestData.content
       
       // Handle file attachments
       if (data.attachments && data.attachments.length > 0) {
         requestData = createFormDataRequest(
-          { content: data.content, type: data.type, replyTo: data.replyTo },
+          { body: data.content, type: data.type, replyTo: data.replyTo },
           data.attachments as File[]
         )
       }
