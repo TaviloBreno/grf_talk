@@ -172,7 +172,7 @@ export const userApi = {
   },
 
   // Get user activity log
-  getActivityLog: async (params: UserActivityLogFormData): Promise<ApiResponse<PaginatedResponse<any>>> => {
+  getActivityLog: async (params: UserActivityLogFormData): Promise<ApiResponse<PaginatedResponse<Record<string, unknown>>>> => {
     try {
       const response = await apiClient.get('/users/activity-log', { params })
       return response.data

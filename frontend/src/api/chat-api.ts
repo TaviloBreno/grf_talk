@@ -158,13 +158,13 @@ export const chatApi = {
   // Send message
   sendMessage: async (chatId: string, data: SendMessageFormData): Promise<ApiResponse<Message>> => {
     try {
-      let requestData: any = data
+      let requestData: unknown = data
       
       // Handle file attachments
       if (data.attachments && data.attachments.length > 0) {
         requestData = createFormDataRequest(
           { content: data.content, type: data.type, replyTo: data.replyTo },
-          data.attachments as any
+          data.attachments as File[]
         )
       }
 
@@ -325,7 +325,7 @@ export const chatApi = {
   getChatFiles: async (
     chatId: string, 
     params?: { type?: string; page?: number; limit?: number }
-  ): Promise<ApiResponse<PaginatedResponse<any>>> => {
+  ): Promise<ApiResponse<PaginatedResponse<Record<string, unknown>>>> => {
     try {
       const response = await apiClient.get(`/chats/${chatId}/files`, { params })
       return response.data

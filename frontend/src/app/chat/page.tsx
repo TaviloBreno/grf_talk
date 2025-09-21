@@ -7,6 +7,7 @@ import { useChatStore } from '@/stores/chat'
 import { ChatContainer } from '@/components/chat/ChatContainer'
 import { ChatList } from '@/components/chat/ChatList'
 import { ChatFilters } from '@/components/chat/ChatFilters'
+import { ChatHeader } from '@/components/chat/ChatHeader'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
 import { Button } from '@/components/ui/button'
 import { MessageSquarePlus, Menu, X } from 'lucide-react'
@@ -91,24 +92,11 @@ export default function ChatPage() {
       {isMobile ? (
         <div className="flex flex-col h-full">
           {/* Mobile Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-card">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleSidebar}
-              className="lg:hidden"
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-            <h1 className="font-semibold">GRF Talk</h1>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleNewChat}
-            >
-              <MessageSquarePlus className="h-5 w-5" />
-            </Button>
-          </div>
+          <ChatHeader 
+            onToggleSidebar={toggleSidebar}
+            onNewChat={handleNewChat}
+            isMobile={true}
+          />
 
           {/* Mobile Sidebar Overlay */}
           {sidebarOpen && (
@@ -171,26 +159,11 @@ export default function ChatPage() {
           >
             <div className="flex flex-col h-full bg-card border-r">
               {/* Sidebar Header */}
-              <div className="flex items-center justify-between p-4 border-b">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-primary-foreground font-semibold text-sm">
-                      {user?.name?.[0]?.toUpperCase() || 'U'}
-                    </span>
-                  </div>
-                  <div>
-                    <h2 className="font-semibold text-sm">{user?.name || 'Usuário'}</h2>
-                    <p className="text-xs text-muted-foreground">Online</p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleNewChat}
-                >
-                  <MessageSquarePlus className="h-4 w-4" />
-                </Button>
-              </div>
+              <ChatHeader 
+                onToggleSidebar={toggleSidebar}
+                onNewChat={handleNewChat}
+                isMobile={false}
+              />
 
               {/* Chat Filters */}
               <div className="p-4 border-b">
