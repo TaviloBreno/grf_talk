@@ -1,4 +1,15 @@
-import { render, screen } from '@testing-library/react'
+impor  it('renders avatar image when src is provided', () => {
+    render(
+      <Avatar>
+        <AvatarImage src="https://example.com/avatar.jpg" alt="User Avatar" />
+        <AvatarFallback>UA</AvatarFallback>
+      </Avatar>
+    )
+    
+    const avatarImage = screen.getByRole('img')
+    expect(avatarImage).toBeDefined()
+    expect(avatarImage.getAttribute('src')).toBe('https://example.com/avatar.jpg') screen } from '@testing-library/react'
+import '@testing-library/jest-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '../avatar'
 
 describe('Avatar Component', () => {

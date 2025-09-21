@@ -302,7 +302,7 @@ export function ChatFilters({ className }: ChatFiltersProps) {
             <DropdownMenuSeparator />
             <DropdownMenuCheckboxItem
               checked={filters.order === 'asc'}
-              onCheckedChange={(checked) => updateFilter('order', checked ? 'asc' : 'desc')}
+              onCheckedChange={(checked: boolean) => updateFilter('order', checked ? 'asc' : 'desc')}
             >
               Ordem crescente
             </DropdownMenuCheckboxItem>
@@ -327,13 +327,13 @@ export function ChatFilters({ className }: ChatFiltersProps) {
             <DropdownMenuSeparator />
             <DropdownMenuCheckboxItem
               checked={filters.showOnline}
-              onCheckedChange={(checked) => updateFilter('showOnline', checked)}
+              onCheckedChange={(checked: boolean) => updateFilter('showOnline', checked)}
             >
               Mostrar apenas online
             </DropdownMenuCheckboxItem>
             <DropdownMenuCheckboxItem
               checked={filters.showArchived}
-              onCheckedChange={(checked) => updateFilter('showArchived', checked)}
+              onCheckedChange={(checked: boolean) => updateFilter('showArchived', checked)}
             >
               Incluir arquivadas
             </DropdownMenuCheckboxItem>

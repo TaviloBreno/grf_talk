@@ -62,11 +62,7 @@ export function ChatContainer({
     if (!chat?.id || !content.trim()) return
     
     try {
-      await sendMessage(chat.id, {
-        content: content.trim(),
-        type: 'text',
-        attachments: []
-      })
+      await sendMessage(chat.id, content.trim(), 'text', [])
     } catch (error) {
       console.error('❌ Erro ao enviar mensagem:', error)
       alert('Erro ao enviar mensagem')
@@ -79,7 +75,7 @@ export function ChatContainer({
     const newContent = prompt('Editar mensagem:', message.body)
     if (newContent && newContent.trim() !== message.body) {
       try {
-        await updateMessage(chat.id, message.id, { body: newContent.trim() })
+        await updateMessage(message.id, newContent.trim())
       } catch (error) {
         console.error('Erro ao editar mensagem:', error)
         alert('Erro ao editar mensagem')
@@ -92,7 +88,7 @@ export function ChatContainer({
     
     if (confirm('Tem certeza que deseja deletar esta mensagem?')) {
       try {
-        await deleteMessage(chat.id, messageId)
+        await deleteMessage(messageId)
       } catch (error) {
         console.error('Erro ao deletar mensagem:', error)
         alert('Erro ao deletar mensagem')

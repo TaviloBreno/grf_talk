@@ -249,7 +249,7 @@ export default function SignInPage() {
               <Checkbox
                 id="rememberMe"
                 checked={formData.rememberMe}
-                onCheckedChange={(checked) => handleInputChange('rememberMe', !!checked)}
+                onCheckedChange={(checked: boolean) => handleInputChange('rememberMe', !!checked)}
               />
               <Label 
                 htmlFor="rememberMe" 
