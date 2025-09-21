@@ -76,22 +76,16 @@ export function NewChatModal({ open, onClose, onChatCreated }: NewChatModalProps
     setSelectedUser(user)
 
     try {
+      // O backend Django espera 'email' para criar chat
       const response = await chatApi.createChat({
-        title: '',
-        type: 'private',
-        participantIds: [user.id],
-        isPublic: false,
-        allowInvites: true,
-        allowFileSharing: true,
-        maxFileSize: 10,
-        description: ''
+        email: user.email
       })
 
       if (response.success && response.data) {
         // Recarregar lista de chats
         await loadChats()
         
-        // Selecionar o novo chat
+        // Selecionar o novo chat (backend retorna o chat diretamente)
         setActiveChat(response.data)
         
         // Chamar callback se fornecido

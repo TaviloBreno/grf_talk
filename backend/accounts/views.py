@@ -270,9 +270,24 @@ class UsersListView(APIView, Authentication):
     def get(self, request):
         """
         Retorna lista de usuários cadastrados (exceto o usuário atual).
+        Suporte para busca por nome ou email através do parâmetro 'search'.
         """
-        # Obter todos os usuários exceto o atual
-        users = User.objects.exclude(id=request.user.id).order_by('name')
+        # Obter parâmetro de busca
+        search_query = request.GET.get('search', '').strip()
+        
+        # Filtrar usuários exceto o atual
+        users = User.objects.exclude(id=request.user.id)
+        
+        # Aplicar filtro de busca se fornecido
+        if search_query:
+            from django.db.models import Q
+            users = users.filter(
+                Q(name__icontains=search_query) | 
+                Q(email__icontains=search_query)
+            )
+        
+        # Ordenar por nome
+        users = users.order_by('name')
         
         # Serializar usuários
         serializer = UserSerializer(users, many=True, context={'request': request})

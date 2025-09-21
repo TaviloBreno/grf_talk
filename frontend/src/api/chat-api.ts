@@ -49,7 +49,7 @@ export const chatApi = {
   },
 
   // Create new chat
-  createChat: async (data: CreateChatFormData): Promise<ApiResponse<Chat>> => {
+  createChat: async (data: CreateChatFormData | { email: string }): Promise<ApiResponse<Chat>> => {
     try {
       const response = await apiClient.post('/chats', data)
       return response.data

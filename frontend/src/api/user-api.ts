@@ -114,7 +114,14 @@ export const userApi = {
   // Search users
   searchUsers: async (params: UserSearchFormData): Promise<ApiResponse<PaginatedResponse<User>>> => {
     try {
-      const response = await apiClient.get('/users/search', { params })
+      // Usar o endpoint /accounts/users que existe no backend
+      const response = await apiClient.get('/accounts/users', { 
+        params: {
+          search: params.query,
+          page: params.page,
+          limit: params.limit
+        }
+      })
       return response.data
     } catch (error) {
       throw handleApiError(error)
