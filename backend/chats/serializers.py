@@ -10,15 +10,24 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     
     from_user = serializers.SerializerMethodField()
     attachment = serializers.SerializerMethodField()
+    isEdited = serializers.SerializerMethodField()
     
     class Meta:
         model = ChatMessage
-        fields = ["id", "body", "attachment", "chat", "from_user", "viewed_at", "created_at"]
+        fields = ["id", "body", "attachment", "chat", "from_user", "viewed_at", "created_at", "updated_at", "isEdited"]
     
     def get_from_user(self, obj):
         """Retorna o usuário remetente serializado."""
         request = self.context.get('request')
         return UserSerializer(obj.from_user, context={'request': request}).data
+    
+    def get_isEdited(self, obj):
+        """Verifica se a mensagem foi editada comparando created_at com updated_at."""
+        # Se updated_at é significativamente diferente de created_at (mais de 1 segundo), foi editada
+        if obj.updated_at and obj.created_at:
+            time_diff = (obj.updated_at - obj.created_at).total_seconds()
+            return time_diff > 1  # Considera editada se a diferença for maior que 1 segundo
+        return False
     
     def get_attachment(self, obj):
         """Retorna o anexo serializado conforme o tipo."""

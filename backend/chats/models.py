@@ -44,6 +44,7 @@ class ChatMessage(models.Model):
     viewed_at = models.DateTimeField(null=True)
     deleted_at = models.DateTimeField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     from_user = models.ForeignKey(User, on_delete=models.CASCADE)
     

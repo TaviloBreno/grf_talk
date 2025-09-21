@@ -294,23 +294,23 @@ export const useChatStore = create<ChatStoreState>()(
         try {
           const response = await chatApi.updateMessage(chatId, messageId, data)
           
-          if (response.success && response.data) {
-            const updatedMessage = response.data
+          // O backend retorna diretamente os dados da mensagem, não em formato { success, data }
+          const updatedMessage = (response as any).data ? (response as any).data : (response as any)
 
-            set((state) => {
-              // Update message in messages state
-              if (state.messages[chatId]) {
-                const messageIndex = state.messages[chatId].findIndex(msg => msg.id === messageId)
-                if (messageIndex !== -1) {
-                  state.messages[chatId][messageIndex] = updatedMessage
-                }
+          // Marcar a mensagem como editada
+          updatedMessage.isEdited = true
+
+          set((state) => {
+            // Update message in messages state
+            if (state.messages[chatId]) {
+              const messageIndex = state.messages[chatId].findIndex(msg => msg.id === messageId)
+              if (messageIndex !== -1) {
+                state.messages[chatId][messageIndex] = updatedMessage
               }
-            })
+            }
+          })
 
-            return updatedMessage
-          } else {
-            throw new Error(response.message || 'Erro ao atualizar mensagem')
-          }
+          return updatedMessage
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar mensagem'
           set((state) => {

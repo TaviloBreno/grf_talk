@@ -392,7 +392,14 @@ export function MessageItem({
             isOwn ? 'text-blue-100 justify-end' : 'text-gray-500'
           )}>
             {message.isEdited && (
-              <span className="italic">editado</span>
+              <span className={cn(
+                'italic px-1.5 py-0.5 rounded text-xs',
+                isOwn 
+                  ? 'bg-blue-500/30 text-blue-100' 
+                  : 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+              )}>
+                editado
+              </span>
             )}
             
             {showTimestamp && (
