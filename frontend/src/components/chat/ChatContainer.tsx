@@ -21,35 +21,15 @@ export function ChatContainer({
   const { activeChat: chat, messages, sendMessage, loadMessages } = useChatStore()
   const { user: currentUser } = useAuthStore()
   
-  // Load messages when active chat changes
-  useEffect(() => {
-    if (chat?.id) {
-      loadMessages(chat.id)
-    }
-  }, [chat?.id, loadMessages])
-
-  // Poll for new messages every 3 seconds when a chat is active
-  useEffect(() => {
-    if (!chat?.id) return
-    
-    const interval = setInterval(() => {
-      loadMessages(chat.id)
-    }, 3000) // Check for new messages every 3 seconds
-
-    return () => {
-      clearInterval(interval)
-    }
-  }, [chat?.id, loadMessages])
+  // Debug logs temporários
+  console.log('🔍 ChatContainer Debug:', {
+    chat: chat?.id ? `Chat ${chat.id}` : 'No chat',
+    currentUser: currentUser?.id ? `User ${currentUser.id}` : 'No user',
+    messagesCount: chat?.id ? (messages[chat.id] || []).length : 0
+  })
   
-  // Get messages for the active chat
-  const chatMessages = chat?.id ? messages[chat.id] || [] : []
-  
-  // Get other participant info
-  const otherParticipant = chat?.user || chat?.to_user || chat?.from_user
-  const participantName = otherParticipant?.name || otherParticipant?.email || 'Chat'
-  
-  // Early return if no chat or user
-  if (!chat || !currentUser) {
+  // Early return if no chat - removendo verificação de currentUser
+  if (!chat) {
     return (
       <div className={cn("flex items-center justify-center h-full", className)}>
         <div className="text-center space-y-4">
@@ -63,37 +43,33 @@ export function ChatContainer({
     )
   }
 
-  const handleSendMessage = async (content: string, attachments?: File[]) => {
+  const handleSendMessage = async (content: string) => {
     if (!chat?.id || !content.trim()) return
     
     try {
+      console.log('🚀 Enviando mensagem:', content)
       await sendMessage(chat.id, {
         content: content.trim(),
         type: 'text',
-        attachments: attachments || []
+        attachments: []
       })
+      console.log('✅ Mensagem enviada com sucesso')
     } catch (error) {
       console.error('❌ Erro ao enviar mensagem:', error)
-      
-      // Mostrar mensagem de erro mais específica
-      let errorMessage = 'Erro ao enviar mensagem'
-      if (error && typeof error === 'object') {
-        if ('message' in error && typeof error.message === 'string') {
-          errorMessage = error.message
-        } else if ('type' in error && error.type === 'api' && 'status' in error) {
-          const msg = 'message' in error && typeof error.message === 'string' ? error.message : 'Falha na API'
-          errorMessage = `Erro ${error.status}: ${msg}`
-        }
-      }
-      
-      // TODO: Mostrar toast ou notificação para o usuário
-      alert(errorMessage)
+      alert('Erro ao enviar mensagem')
     }
   }
 
+  // Get messages for the active chat
+  const chatMessages = chat?.id ? messages[chat.id] || [] : []
+  
+  // Get other participant info
+  const otherParticipant = chat?.user || chat?.to_user || chat?.from_user
+  const participantName = otherParticipant?.name || otherParticipant?.email || 'Chat'
+
   return (
     <div className={cn("flex flex-col h-full", className)}>
-      {/* Chat Header Simples para container de chat */}
+      {/* Chat Header Simples */}
       <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
@@ -108,19 +84,25 @@ export function ChatContainer({
         </div>
       </div>
 
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4">
+      {/* Messages Area - SIMPLIFICADO */}
+      <div className="flex-1 p-4 overflow-y-auto">
         <div className="space-y-4">
           {chatMessages.length > 0 ? (
             chatMessages.map((message) => (
-              <MessageItem
+              <div 
                 key={message.id}
-                message={message}
-                currentUser={currentUser}
-                isOwn={message.from_user?.id === currentUser.id}
-                showAvatar={true}
-                showTimestamp={true}
-              />
+                className={cn(
+                  "flex w-max max-w-[75%] flex-col gap-2 rounded-lg px-3 py-2 text-sm",
+                  message.from_user?.id === currentUser?.id
+                    ? "ml-auto bg-primary text-primary-foreground"
+                    : "bg-muted"
+                )}
+              >
+                <div>{message.body}</div>
+                <div className="text-xs opacity-70">
+                  {new Date(message.created_at).toLocaleTimeString()}
+                </div>
+              </div>
             ))
           ) : (
             <div className="text-center text-muted-foreground py-8">
@@ -129,15 +111,19 @@ export function ChatContainer({
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
-      {/* Chat Footer */}
-      <div className="mt-auto border-t bg-white dark:bg-gray-800 p-4">
+      {/* Chat Footer - SEMPRE VISÍVEL */}
+      <div 
+        className="border-t bg-white dark:bg-gray-800 p-4"
+        style={{ minHeight: '80px', backgroundColor: '#f0f0f0' }}
+      >
         <div className="flex items-center space-x-2">
           <input 
             type="text" 
             placeholder="Digite sua mensagem..." 
             className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-gray-900 dark:text-white bg-white dark:bg-gray-700 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ minHeight: '40px' }}
             onKeyPress={(e) => {
               if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                 handleSendMessage(e.currentTarget.value.trim())
@@ -147,6 +133,7 @@ export function ChatContainer({
           />
           <button 
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+            style={{ minHeight: '40px' }}
             onClick={() => {
               const input = document.querySelector('input[type="text"]') as HTMLInputElement
               if (input && input.value.trim()) {
@@ -158,10 +145,11 @@ export function ChatContainer({
             Enviar
           </button>
         </div>
+        {/* Debug info - SEMPRE VISÍVEL */}
+        <div className="text-xs text-gray-700 mt-2 bg-yellow-100 p-2 rounded">
+          Debug: Chat ID: {chat?.id} | User ID: {currentUser?.id} | Messages: {chatMessages.length}
+        </div>
       </div>
-
-      {/* Connection Status */}
-      <ConnectionStatus />
     </div>
   )
 }
