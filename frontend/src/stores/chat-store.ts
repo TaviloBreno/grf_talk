@@ -251,33 +251,28 @@ export const useChatStore = create<ChatStoreState>()(
 
           const response = await chatApi.sendMessage(chatId, messageData)
           
-          if (response.success && response.data) {
-            const newMessage = response.data
+          console.log('🔍 Response from sendMessage:', response)
+          
+          // O backend retorna diretamente os dados da mensagem em response.data
+          const newMessage = (response as any).data ? (response as any).data : (response as any)
 
-            set((state) => {
-              if (!state.messages[chatId]) {
-                state.messages[chatId] = []
-              }
-              state.messages[chatId].push(newMessage)
-              
-              // Update last message in chat list
-              const chatIndex = state.chatList.findIndex(chat => chat.id === chatId)
-              if (chatIndex !== -1) {
-                state.chatList[chatIndex].lastMessage = newMessage
-                state.chatList[chatIndex].updatedAt = newMessage.createdAt
-              }
-              
-              state.replyingTo = null
-            })
+          set((state) => {
+            if (!state.messages[chatId]) {
+              state.messages[chatId] = []
+            }
+            state.messages[chatId].push(newMessage)
+            
+            // Update last message in chat list
+            const chatIndex = state.chatList.findIndex(chat => chat.id === chatId)
+            if (chatIndex !== -1) {
+              state.chatList[chatIndex].lastMessage = newMessage
+              state.chatList[chatIndex].updatedAt = newMessage.createdAt
+            }
+            
+            state.replyingTo = null
+          })
 
-            return newMessage
-          } else {
-            const errorMessage = response.message || 'Erro ao enviar mensagem'
-            set((state) => {
-              state.error = errorMessage
-            })
-            throw new Error(errorMessage)
-          }
+          return newMessage
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Erro ao enviar mensagem'
           set((state) => {

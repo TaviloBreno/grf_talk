@@ -175,7 +175,7 @@ export const chatApi = {
         )
       }
 
-      const response = await apiClient.post(`/chats/${chatId}/messages`, requestData, {
+      const response = await apiClient.post(`/chats/${chatId}/messages/`, requestData, {
         headers: data.attachments?.length 
           ? { 'Content-Type': 'multipart/form-data' }
           : undefined

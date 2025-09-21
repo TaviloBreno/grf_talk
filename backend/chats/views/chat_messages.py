@@ -57,8 +57,11 @@ class ChatMessagesView(BaseView):
         attachment_code = request.data.get('attachment_code')
         attachment_id = request.data.get('attachment_id')
         
+        print(f"🔍 Extracted - body: '{body}', attachment_code: {attachment_code}, attachment_id: {attachment_id}")
+        
         # Validar que pelo menos body ou anexo esteja presente
         if not body and not (attachment_code and attachment_id):
+            print("❌ Validation failed: No body or attachment")
             return Response(
                 {'error': 'Corpo da mensagem ou anexo é obrigatório'}, 
                 status=400
@@ -124,17 +127,23 @@ class ChatMessagesView(BaseView):
         to_user = chat.to_user if chat.from_user.id == request.user.id else chat.from_user
         
         # Emitir evento socket para o destinatário
-        socket.emit_to_user(to_user.id, 'new_message', {
-            'type': 'create',
-            'message': serializer.data,
-            'chat_id': chat_id
-        })
+        try:
+            socket.emit_to_user(to_user.id, 'new_message', {
+                'type': 'create',
+                'message': serializer.data,
+                'chat_id': chat_id
+            })
+        except Exception as e:
+            pass  # Log error silently
         
         # Emitir evento de atualização do chat para o remetente
-        socket.emit_to_user(request.user.id, 'update_chat', {
-            'type': 'message_sent',
-            'chat_id': chat_id,
-            'message': serializer.data
-        })
+        try:
+            socket.emit_to_user(request.user.id, 'update_chat', {
+                'type': 'message_sent',
+                'chat_id': chat_id,
+                'message': serializer.data
+            })
+        except Exception as e:
+            pass  # Log error silently
         
         return Response(serializer.data, status=201)
