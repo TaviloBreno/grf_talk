@@ -293,7 +293,7 @@ export function ChatFooter({
 
   return (
     <div className={cn(
-      'border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800',
+      'border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 min-h-[80px]',
       className
     )}>
       {/* Attachment Previews */}

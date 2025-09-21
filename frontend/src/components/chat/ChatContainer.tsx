@@ -106,9 +106,9 @@ export function ChatContainer({
   const participantName = chat?.name || chat?.title || 'Chat'
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
+      <div className="flex items-center justify-between p-4 border-b bg-card flex-shrink-0">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
             <span className="text-primary-foreground font-semibold text-sm">
@@ -123,7 +123,7 @@ export function ChatContainer({
       </div>
 
       {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea className="flex-1 p-4 overflow-auto">
         <div className="space-y-4">
           {chatMessages.length > 0 ? (
             chatMessages.map((message) => (
@@ -148,10 +148,14 @@ export function ChatContainer({
       </ScrollArea>
 
       {/* Chat Footer */}
-      <ChatFooter onSendMessage={handleSendMessage} />
+      <div className="flex-shrink-0">
+        <ChatFooter onSendMessage={handleSendMessage} />
+      </div>
 
-      {/* Connection Status */}
-      <ConnectionStatus />
+      {/* Connection Status - positioned absolutely to not interfere with layout */}
+      <div className="absolute bottom-20 right-4">
+        <ConnectionStatus />
+      </div>
     </div>
   )
 }
