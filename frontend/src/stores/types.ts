@@ -44,6 +44,7 @@ export interface SearchSliceState {
   searchResults: Message[]
   isSearching: boolean
   searchError: string | null
+  searchHistory: string[]
 }
 
 export interface SearchSliceActions {
@@ -51,6 +52,8 @@ export interface SearchSliceActions {
   searchMessages: (query: string, chatId?: string) => Promise<void>
   clearSearchResults: () => void
   clearSearchError: () => void
+  addToSearchHistory: (query: string) => void
+  clearSearchHistory: () => void
 }
 
 // UI state and actions

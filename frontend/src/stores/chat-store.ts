@@ -1,598 +1,150 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
-import { chatApi } from '@/api/chat-api'
-import type {
-  Chat,
-  Message,
-  ChatParticipant,
-  CreateChatData,
-  UpdateChatData,
-  SendMessageData,
-  UpdateMessageData,
-  ChatUIState,
-  ChatActions,
-} from '@/types/chat'
+import { subscribeWithSelector } from 'zustand/middleware'
+import { createChatSlice } from './slices/chat-slice'
+import { createMessageSlice } from './slices/message-slice'
+import { createSearchSlice } from './slices/search-slice'
+import { createUISlice } from './slices/ui-slice'
+import type { ChatStoreState } from './types'
 
-// Extended state interface combining UI state and actions
-interface ChatStoreState extends ChatUIState, ChatActions {
-  // Additional UI state
-  isDarkMode: boolean
-  sidebarCollapsed: boolean
-  
-  // Additional actions
-  toggleSidebar: () => void
-  setDarkMode: (isDark: boolean) => void
-  resetStore: () => void
-}
-
-const initialState: ChatUIState = {
-  activeChat: null,
-  chatList: [],
-  messages: {},
-  isLoading: false,
-  error: null,
-  typingUsers: {},
-  searchQuery: '',
-  searchResults: [],
-  selectedMessages: [],
-  replyingTo: null,
-}
-
+/**
+ * Modular Chat Store using Zustand Slices
+ * 
+ * Refactored from single large store into focused slices following SOLID principles:
+ * - ChatSlice: Chat management (CRUD operations)
+ * - MessageSlice: Message handling (send, edit, delete, real-time updates)
+ * - SearchSlice: Message search functionality
+ * - UISlice: UI state management (theme, sidebar, typing indicators)
+ * 
+ * Benefits:
+ * - Single Responsibility: Each slice handles one concern
+ * - Open/Closed: Easy to extend with new slices
+ * - Interface Segregation: Consumers only depend on needed functionality
+ * - Dependency Inversion: Slices depend on abstractions (types)
+ */
 export const useChatStore = create<ChatStoreState>()(
-  persist(
-    immer((set, get) => ({
-      // Initial state
-      ...initialState,
-      isDarkMode: false,
-      sidebarCollapsed: false,
-
-      // Set active chat
-      setActiveChat: (chat: Chat | null) => {
-        set((state) => {
-          state.activeChat = chat
-          state.selectedMessages = []
-          state.replyingTo = null
-          state.error = null
-        })
-
-        // Load messages for the active chat
-        if (chat) {
-          get().loadMessages(chat.id)
-        }
-      },
-
-      // Load user chats
-      loadChats: async () => {
-        try {
-          set((state) => {
-            state.isLoading = true
-            state.error = null
-          })
-
-          const response = await chatApi.getChats({ page: 1, limit: 50 })
-          
-          if (response.success) {
-            set((state) => {
-              state.chatList = response.data?.data || []
-              state.isLoading = false
-            })
-          } else {
-            set((state) => {
-              state.error = response.message || 'Erro ao carregar chats'
-              state.isLoading = false
-            })
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar chats'
-          set((state) => {
-            state.error = errorMessage
-            state.isLoading = false
-          })
-        }
-      },
-
-      // Create new chat
-      createChat: async (data: CreateChatData) => {
-        try {
-          set((state) => {
-            state.isLoading = true
-            state.error = null
-          })
-
-          // Add default values for required fields
-          const chatData = {
-            ...data,
-            isPublic: data.settings?.isPublic ?? false,
-            allowInvites: data.settings?.allowInvites ?? true,
-            allowFileSharing: data.settings?.allowFileSharing ?? true,
-            maxFileSize: data.settings?.maxFileSize ?? 10,
-          }
-
-          const response = await chatApi.createChat(chatData)
-          
-          if (response.success && response.data) {
-            const newChat = response.data
-
-            set((state) => {
-              state.chatList.unshift(newChat)
-              state.activeChat = newChat
-              state.isLoading = false
-            })
-
-            return newChat
-          } else {
-            const errorMessage = response.message || 'Erro ao criar chat'
-            set((state) => {
-              state.error = errorMessage
-              state.isLoading = false
-            })
-            throw new Error(errorMessage)
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao criar chat'
-          set((state) => {
-            state.error = errorMessage
-            state.isLoading = false
-          })
-          throw error
-        }
-      },
-
-      // Update chat
-      updateChat: async (chatId: string, data: UpdateChatData) => {
-        try {
-          const response = await chatApi.updateChat(chatId, data)
-          
-          if (response.success && response.data) {
-            const updatedChat = response.data
-
-            set((state) => {
-              const index = state.chatList.findIndex(chat => chat.id === chatId)
-              if (index !== -1) {
-                state.chatList[index] = updatedChat
-              }
-              
-              if (state.activeChat?.id === chatId) {
-                state.activeChat = updatedChat
-              }
-            })
-
-            return updatedChat
-          } else {
-            const errorMessage = response.message || 'Erro ao atualizar chat'
-            set((state) => {
-              state.error = errorMessage
-            })
-            throw new Error(errorMessage)
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar chat'
-          set((state) => {
-            state.error = errorMessage
-          })
-          throw error
-        }
-      },
-
-      // Delete chat
-      deleteChat: async (chatId: string) => {
-        try {
-          const response = await chatApi.deleteChat(chatId)
-          
-          if (response.success) {
-            set((state) => {
-              state.chatList = state.chatList.filter(chat => chat.id !== chatId)
-              
-              if (state.activeChat?.id === chatId) {
-                state.activeChat = null
-              }
-              
-              delete state.messages[chatId]
-            })
-          } else {
-            const errorMessage = response.message || 'Erro ao deletar chat'
-            set((state) => {
-              state.error = errorMessage
-            })
-            throw new Error(errorMessage)
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao deletar chat'
-          set((state) => {
-            state.error = errorMessage
-          })
-          throw error
-        }
-      },
-
-      // Load messages for a chat
-      loadMessages: async (chatId: string, page = 1) => {
-        try {
-          const response = await chatApi.getMessages(chatId, { page, limit: 50 })
-          
-          // O backend retorna dados diretamente, não em formato { success, data }
-          let messages: Message[] = []
-          
-          if (response.data && Array.isArray(response.data)) {
-            // Backend retorna array direto
-            messages = response.data
-          } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
-            // Backend retorna formato paginado
-            messages = response.data.data
-          } else if (response && Array.isArray(response)) {
-            // Resposta é array direto
-            messages = response
-          }
-
-          set((state) => {
-            if (page === 1) {
-              // First page, replace all messages
-              state.messages[chatId] = messages
-            } else {
-              // Additional pages, prepend to existing messages
-              state.messages[chatId] = [
-                ...messages,
-                ...(state.messages[chatId] || [])
-              ]
-            }
-          })
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar mensagens'
-          set((state) => {
-            state.error = errorMessage
-          })
-        }
-      },
-
-      // Send message
-      sendMessage: async (chatId: string, data: SendMessageData) => {
-        try {
-          // Add default type if not provided
-          const messageData = {
-            ...data,
-            type: data.type || 'text' as const,
-          }
-
-          const response = await chatApi.sendMessage(chatId, messageData)
-          
-          // O backend retorna diretamente os dados da mensagem em response.data
-          const newMessage = (response as any).data ? (response as any).data : (response as any)
-
-          set((state) => {
-            if (!state.messages[chatId]) {
-              state.messages[chatId] = []
-            }
-            // Verificar se a mensagem já existe para evitar duplicatas
-            const messageExists = state.messages[chatId].some(msg => msg.id === newMessage.id)
-            if (!messageExists) {
-              state.messages[chatId].push(newMessage)
-            }
+  subscribeWithSelector(
+    immer(
+      (...a) => ({
+        // Chat management slice
+        ...createChatSlice(...a),
+        
+        // Message management slice
+        ...createMessageSlice(...a),
+        
+        // Search functionality slice
+        ...createSearchSlice(...a),
+        
+        // UI state management slice
+        ...createUISlice(...a),
+        
+        // Global store actions
+        resetStore: () => {
+          // Reset all slices to initial state
+          a[0](() => ({
+            // Chat slice
+            activeChat: null,
+            chatList: [],
+            isLoading: false,
+            error: null,
             
-            // Update last message in chat list
-            const chatIndex = state.chatList.findIndex(chat => chat.id === chatId)
-            if (chatIndex !== -1) {
-              state.chatList[chatIndex].lastMessage = newMessage
-              state.chatList[chatIndex].updatedAt = newMessage.created_at
-            }
+            // Message slice
+            messages: {},
+            selectedMessages: [],
+            replyingTo: null,
+            isLoadingMessages: false,
+            messageError: null,
             
-            state.replyingTo = null
-          })
-
-          return newMessage
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao enviar mensagem'
-          set((state) => {
-            state.error = errorMessage
-          })
-          throw error
+            // Search slice
+            searchQuery: '',
+            searchResults: [],
+            isSearching: false,
+            searchError: null,
+            searchHistory: [],
+            
+            // UI slice
+            isDarkMode: false,
+            sidebarCollapsed: false,
+            typingUsers: {}
+          }))
         }
-      },
-
-      // Update message
-      updateMessage: async (chatId: string, messageId: string, data: UpdateMessageData) => {
-        try {
-          const response = await chatApi.updateMessage(chatId, messageId, data)
-          
-          // O backend retorna diretamente os dados da mensagem, não em formato { success, data }
-          const updatedMessage = (response as any).data ? (response as any).data : (response as any)
-
-          // Marcar a mensagem como editada
-          updatedMessage.isEdited = true
-
-          set((state) => {
-            // Update message in messages state
-            if (state.messages[chatId]) {
-              const messageIndex = state.messages[chatId].findIndex(msg => msg.id === messageId)
-              if (messageIndex !== -1) {
-                state.messages[chatId][messageIndex] = updatedMessage
-              }
-            }
-          })
-
-          return updatedMessage
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao atualizar mensagem'
-          set((state) => {
-            state.error = errorMessage
-          })
-          throw error
-        }
-      },
-
-      // Delete message
-      deleteMessage: async (chatId: string, messageId: string) => {
-        try {
-          const response = await chatApi.deleteMessage(chatId, messageId)
-          
-          if (response.success) {
-            set((state) => {
-              // Remove message from messages state
-              if (state.messages[chatId]) {
-                state.messages[chatId] = state.messages[chatId].filter(msg => msg.id !== messageId)
-              }
-            })
-          } else {
-            throw new Error(response.message || 'Erro ao deletar mensagem')
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao deletar mensagem'
-          set((state) => {
-            state.error = errorMessage
-          })
-          throw error
-        }
-      },
-
-      // Join chat
-      joinChat: async (chatId: string) => {
-        try {
-          const response = await chatApi.joinChat(chatId)
-          
-          if (response.success) {
-            // Reload chats to get updated list
-            await get().loadChats()
-          } else {
-            const errorMessage = response.message || 'Erro ao entrar no chat'
-            set((state) => {
-              state.error = errorMessage
-            })
-            throw new Error(errorMessage)
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao entrar no chat'
-          set((state) => {
-            state.error = errorMessage
-          })
-          throw error
-        }
-      },
-
-      // Leave chat
-      leaveChat: async (chatId: string) => {
-        try {
-          const response = await chatApi.leaveChat(chatId)
-          
-          if (response.success) {
-            set((state) => {
-              state.chatList = state.chatList.filter(chat => chat.id !== chatId)
-              
-              if (state.activeChat?.id === chatId) {
-                state.activeChat = null
-              }
-              
-              delete state.messages[chatId]
-            })
-          } else {
-            const errorMessage = response.message || 'Erro ao sair do chat'
-            set((state) => {
-              state.error = errorMessage
-            })
-            throw new Error(errorMessage)
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao sair do chat'
-          set((state) => {
-            state.error = errorMessage
-          })
-          throw error
-        }
-      },
-
-      // Add participant
-      addParticipant: async (chatId: string, userId: string) => {
-        try {
-          const response = await chatApi.addParticipant(chatId, { userId, role: 'member' })
-          
-          if (response.success) {
-            // Reload chat to get updated participants
-            if (get().activeChat?.id === chatId) {
-              const chatResponse = await chatApi.getChatById(chatId)
-              if (chatResponse.success && chatResponse.data) {
-                set((state) => {
-                  state.activeChat = chatResponse.data!
-                })
-              }
-            }
-          } else {
-            const errorMessage = response.message || 'Erro ao adicionar participante'
-            set((state) => {
-              state.error = errorMessage
-            })
-            throw new Error(errorMessage)
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao adicionar participante'
-          set((state) => {
-            state.error = errorMessage
-          })
-          throw error
-        }
-      },
-
-      // Remove participant
-      removeParticipant: async (chatId: string, userId: string) => {
-        try {
-          const response = await chatApi.removeParticipant(chatId, userId)
-          
-          if (response.success) {
-            // Reload chat to get updated participants
-            if (get().activeChat?.id === chatId) {
-              const chatResponse = await chatApi.getChatById(chatId)
-              if (chatResponse.success && chatResponse.data) {
-                set((state) => {
-                  state.activeChat = chatResponse.data!
-                })
-              }
-            }
-          } else {
-            const errorMessage = response.message || 'Erro ao remover participante'
-            set((state) => {
-              state.error = errorMessage
-            })
-            throw new Error(errorMessage)
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro ao remover participante'
-          set((state) => {
-            state.error = errorMessage
-          })
-          throw error
-        }
-      },
-
-      // Search messages
-      searchMessages: async (query: string, chatId?: string) => {
-        try {
-          set((state) => {
-            state.searchQuery = query
-            state.isLoading = true
-          })
-
-          const response = await chatApi.searchMessages({ query, chatId })
-          
-          if (response.success && response.data) {
-            set((state) => {
-              state.searchResults = response.data?.data || []
-              state.isLoading = false
-            })
-          } else {
-            set((state) => {
-              state.searchResults = []
-              state.isLoading = false
-              state.error = response.message || 'Erro na busca'
-            })
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Erro na busca'
-          set((state) => {
-            state.searchResults = []
-            state.isLoading = false
-            state.error = errorMessage
-          })
-        }
-      },
-
-      // Mark chat as read
-      markAsRead: async (chatId: string) => {
-        try {
-          await chatApi.markAsRead(chatId)
-        } catch (error) {
-          console.error('Error marking chat as read:', error)
-        }
-      },
-
-      // Set typing status
-      setTyping: (chatId: string, isTyping: boolean) => {
-        // This would typically be handled by WebSocket
-        chatApi.setTyping(chatId, isTyping).catch(console.error)
-      },
-
-      // Clear error
-      clearError: () => {
-        set((state) => {
-          state.error = null
-        })
-      },
-
-      // Toggle sidebar
-      toggleSidebar: () => {
-        set((state) => {
-          state.sidebarCollapsed = !state.sidebarCollapsed
-        })
-      },
-
-      // Set dark mode
-      setDarkMode: (isDark: boolean) => {
-        set((state) => {
-          state.isDarkMode = isDark
-        })
-      },
-
-      // Reset store
-      resetStore: () => {
-        set(() => ({
-          ...initialState,
-          isDarkMode: false,
-          sidebarCollapsed: false,
-        }))
-      },
-    })),
-    {
-      name: 'chat-store',
-      storage: createJSONStorage(() => {
-        if (typeof window !== 'undefined') {
-          return localStorage
-        }
-        return {
-          getItem: () => null,
-          setItem: () => {},
-          removeItem: () => {},
-        }
-      }),
-      partialize: (state) => ({
-        // Persist only UI preferences, not chat data
-        isDarkMode: state.isDarkMode,
-        sidebarCollapsed: state.sidebarCollapsed,
-      }),
-    }
+      })
+    )
   )
 )
 
-// Selectors for easier state access
-export const useActiveChat = () => useChatStore((state) => state.activeChat)
-export const useChatList = () => useChatStore((state) => state.chatList)
-export const useChatMessages = (chatId?: string) => 
-  useChatStore((state) => chatId ? state.messages[chatId] || [] : [])
-export const useChatLoading = () => useChatStore((state) => state.isLoading)
-export const useChatError = () => useChatStore((state) => state.error)
-export const useSearchResults = () => useChatStore((state) => state.searchResults)
-export const useTypingUsers = (chatId?: string) => 
-  useChatStore((state) => chatId ? state.typingUsers[chatId] || [] : [])
+// Export types for external use
+export type { ChatStoreState } from './types'
 
-// Actions for easier access
-export const useChatActions = () => {
-  const store = useChatStore()
-  return {
-    setActiveChat: store.setActiveChat,
-    loadChats: store.loadChats,
-    createChat: store.createChat,
-    updateChat: store.updateChat,
-    deleteChat: store.deleteChat,
-    loadMessages: store.loadMessages,
-    sendMessage: store.sendMessage,
-    updateMessage: store.updateMessage,
-    deleteMessage: store.deleteMessage,
-    joinChat: store.joinChat,
-    leaveChat: store.leaveChat,
-    addParticipant: store.addParticipant,
-    removeParticipant: store.removeParticipant,
-    searchMessages: store.searchMessages,
-    markAsRead: store.markAsRead,
-    setTyping: store.setTyping,
-    clearError: store.clearError,
-    toggleSidebar: store.toggleSidebar,
-    setDarkMode: store.setDarkMode,
-    resetStore: store.resetStore,
-  }
-}
+// Export individual slice hooks for focused component subscriptions
+export const useChatSlice = () => useChatStore((state) => ({
+  activeChat: state.activeChat,
+  chatList: state.chatList,
+  isLoading: state.isLoading,
+  error: state.error,
+  setActiveChat: state.setActiveChat,
+  loadChats: state.loadChats,
+  createChat: state.createChat,
+  updateChat: state.updateChat,
+  deleteChat: state.deleteChat,
+  clearChatError: state.clearChatError
+}))
+
+export const useMessageSlice = () => useChatStore((state) => ({
+  messages: state.messages,
+  selectedMessages: state.selectedMessages,
+  replyingTo: state.replyingTo,
+  isLoadingMessages: state.isLoadingMessages,
+  messageError: state.messageError,
+  loadMessages: state.loadMessages,
+  sendMessage: state.sendMessage,
+  updateMessage: state.updateMessage,
+  deleteMessage: state.deleteMessage,
+  selectMessage: state.selectMessage,
+  selectMultipleMessages: state.selectMultipleMessages,
+  clearSelectedMessages: state.clearSelectedMessages,
+  setReplyingTo: state.setReplyingTo,
+  clearMessageError: state.clearMessageError
+}))
+
+export const useSearchSlice = () => useChatStore((state) => ({
+  searchQuery: state.searchQuery,
+  searchResults: state.searchResults,
+  isSearching: state.isSearching,
+  searchError: state.searchError,
+  searchHistory: state.searchHistory,
+  setSearchQuery: state.setSearchQuery,
+  searchMessages: state.searchMessages,
+  clearSearchResults: state.clearSearchResults,
+  clearSearchError: state.clearSearchError,
+  addToSearchHistory: state.addToSearchHistory,
+  clearSearchHistory: state.clearSearchHistory
+}))
+
+export const useUISlice = () => useChatStore((state) => ({
+  isDarkMode: state.isDarkMode,
+  sidebarCollapsed: state.sidebarCollapsed,
+  typingUsers: state.typingUsers,
+  toggleSidebar: state.toggleSidebar,
+  setDarkMode: state.setDarkMode,
+  setTypingUsers: state.setTypingUsers,
+  clearTypingUsers: state.clearTypingUsers
+}))
+
+// Utility hooks for common use cases
+export const useActiveChatMessages = () => useChatStore((state) => {
+  const chatId = state.activeChat?.id
+  return chatId ? state.messages[chatId] || [] : []
+})
+
+export const useTypingUsersForChat = (chatId: string) => useChatStore((state) => 
+  state.typingUsers[chatId] || []
+)
+
+export const useUnreadCounts = () => useChatStore((state) => {
+  const counts: Record<string, number> = {}
+  state.chatList.forEach(chat => {
+    counts[chat.id] = chat.unreadCount || 0
+  })
+  return counts
+})
