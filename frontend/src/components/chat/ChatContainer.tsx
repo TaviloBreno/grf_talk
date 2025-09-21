@@ -133,14 +133,6 @@ export function ChatContainer({
   const participantName = participantInfo?.name || 'Chat'
   const participantAvatar = participantInfo?.avatar
 
-  // Debug log para verificar estrutura do chat
-  useEffect(() => {
-    if (chat) {
-      console.log('🔍 Chat atual:', chat)
-      console.log('👤 Participant info:', participantInfo)
-    }
-  }, [chat, participantInfo])
-
   return (
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
       {/* Chat Header */}
