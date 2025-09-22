@@ -16,6 +16,7 @@ Uma aplicação de chat moderna e completa construída com Django REST Framework
 - [Configuração](#-configuração)
 - [Usuários de Teste](#-usuários-de-teste)
 - [Executando o Projeto](#-executando-o-projeto)
+- [Testes](#-testes)
 - [API Endpoints](#-api-endpoints)
 - [Funcionalidades](#-funcionalidades)
 - [Estrutura do Projeto](#-estrutura-do-projeto)
@@ -233,6 +234,120 @@ chmod +x start-project.sh
 # Execute o script
 ./start-project.sh
 ```
+
+## 🧪 Testes
+
+O projeto inclui uma suíte de testes abrangente para garantir a qualidade e confiabilidade do código.
+
+### Frontend (Jest + Testing Library)
+
+O frontend possui testes unitários e de integração usando Jest e React Testing Library.
+
+#### Executar Testes
+```bash
+cd frontend
+
+# Executar todos os testes
+npm test
+
+# Executar testes em modo watch
+npm test -- --watch
+
+# Executar testes com cobertura
+npm test -- --coverage
+
+# Executar teste específico
+npm test -- --testPathPattern="ChatFooter"
+```
+
+#### Estrutura dos Testes
+```
+frontend/src/
+├── components/
+│   ├── ui/
+│   │   └── __tests__/
+│   │       └── avatar.test.tsx
+│   └── chat/
+│       └── __tests__/
+│           ├── ChatFooter.test.tsx
+│           └── ChatFooter.simple.test.tsx
+├── setupTests.ts
+└── jest.config.js
+```
+
+#### Cobertura de Testes
+- ✅ **Componentes UI**: Avatar, Button, Input, Textarea
+- ✅ **Componentes de Chat**: ChatFooter, EmojiPicker, AudioRecorder
+- ✅ **Mocks**: Componentes complexos mockados para isolamento
+- ✅ **Acessibilidade**: Testes de labels ARIA e navegação por teclado
+
+### Backend (Django Test Framework)
+
+O backend utiliza o framework de testes nativo do Django com factory_boy para geração de dados.
+
+#### Executar Testes
+```bash
+cd backend
+
+# Executar todos os testes
+python manage.py test
+
+# Executar testes com verbosidade
+python manage.py test --verbosity=2
+
+# Executar testes específicos
+python manage.py test accounts.tests
+python manage.py test chats.tests
+
+# Executar teste específico
+python manage.py test accounts.tests.test_auth
+```
+
+#### Estrutura dos Testes
+```
+backend/
+├── accounts/
+│   ├── tests.py
+│   └── test_accounts.py
+├── chats/
+│   ├── tests.py
+│   ├── test_chats.py
+│   └── test_messages.py
+├── attachments/
+│   └── tests.py
+└── test_*.py (arquivos na raiz)
+```
+
+#### Cobertura de Testes
+- ✅ **Autenticação**: Registro, login, JWT tokens
+- ✅ **Usuários**: CRUD de perfis e avatars
+- ✅ **Chat**: Criação, listagem e gerenciamento de chats
+- ✅ **Mensagens**: Envio, recebimento e histórico
+- ✅ **Anexos**: Upload e download de arquivos
+- ✅ **WebSockets**: Comunicação em tempo real
+
+### Status dos Testes
+
+**Frontend:**
+```
+✅ Test Suites: 3 passed, 3 total
+✅ Tests: 18 passed, 18 total
+✅ Time: ~7s
+```
+
+**Backend:**
+```
+✅ Testes de integração funcionais
+✅ Cobertura de API endpoints
+✅ Validação de modelos
+```
+
+### Configuração de CI/CD
+
+Os testes são executados automaticamente em:
+- ✅ **Pre-commit hooks**: Testes unitários
+- ✅ **Pull requests**: Suíte completa de testes
+- ✅ **Deploy**: Validação antes da publicação
 
 ## 🔗 API Endpoints
 
