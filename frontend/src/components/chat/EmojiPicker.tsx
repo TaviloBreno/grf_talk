@@ -53,6 +53,7 @@ export function EmojiPicker({ onEmojiSelect, disabled = false }: EmojiPickerProp
           size="icon"
           disabled={disabled}
           className="shrink-0"
+          aria-label="Emoji"
         >
           <Smile className="h-5 w-5" />
         </Button>

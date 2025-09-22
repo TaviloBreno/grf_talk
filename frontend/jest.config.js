@@ -14,12 +14,15 @@ const customJestConfig = {
   moduleDirectories: ['node_modules', '<rootDir>/'],
   
   // Handle module aliases
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   
   testEnvironment: 'jest-environment-jsdom',
+  
+  // Setup files
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   
   // Coverage settings
   collectCoverageFrom: [

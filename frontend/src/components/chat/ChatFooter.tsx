@@ -393,6 +393,7 @@ export function ChatFooter({
                   onClick={openImageDialog}
                   disabled={disabled || isLoading}
                   className="h-10 w-10"
+                  aria-label="Anexar imagem"
                 >
                   <Camera className="h-5 w-5" />
                 </Button>
@@ -403,6 +404,7 @@ export function ChatFooter({
                   onClick={openFileDialog}
                   disabled={disabled || isLoading}
                   className="h-10 w-10"
+                  aria-label="Anexar arquivo"
                 >
                   <Paperclip className="h-5 w-5" />
                 </Button>
@@ -423,6 +425,7 @@ export function ChatFooter({
                 onClick={() => setShowAudioRecorder(true)}
                 disabled={disabled || isLoading}
                 className="h-10 w-10"
+                aria-label="Gravar áudio"
               >
                 <Mic className="h-5 w-5" />
               </Button>
@@ -457,6 +460,7 @@ export function ChatFooter({
                 ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
             )}
+            aria-label="Enviar mensagem"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
