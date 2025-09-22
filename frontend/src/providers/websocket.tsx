@@ -1,9 +1,10 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import type { Message, TypingUser } from '@/types/chat'
 import type { User, ConnectionStatus } from '@/types'
 import { useAuthStore } from '@/stores/auth-store'
+import { PollingManager } from '@/lib/polling-manager'
 
 interface WebSocketContextType {
   socket: null
@@ -34,6 +35,7 @@ export function WebSocketProvider({
   const [onlineUsers, setOnlineUsers] = useState<User[]>([])
   const [typingUsers, setTypingUsers] = useState<Record<string, TypingUser[]>>({})
   const [lastPollTimestamp, setLastPollTimestamp] = useState<number | null>(null)
+  const pollingManagerRef = useRef<PollingManager | null>(null)
   
   const { user } = useAuthStore()
   
@@ -51,12 +53,28 @@ export function WebSocketProvider({
     if (!user || !token) {
       setIsConnected(false)
       setConnectionStatus('disconnected')
+      
+      // Stop existing polling
+      if (pollingManagerRef.current) {
+        pollingManagerRef.current.stopPolling()
+        pollingManagerRef.current = null
+      }
       return
     }
 
     setConnectionStatus('connecting')
 
-    const pollEvents = async () => {
+    // Create polling manager if it doesn't exist
+    if (!pollingManagerRef.current) {
+      pollingManagerRef.current = new PollingManager({
+        baseInterval: 3000,
+        maxInterval: 15000,
+        backoffMultiplier: 1.5,
+        maxRetries: 5
+      })
+    }
+
+    const pollFunction = async () => {
       try {
         const url = new URL(`${serverUrl}/events/poll/`)
         if (lastPollTimestamp) {
@@ -71,6 +89,10 @@ export function WebSocketProvider({
         })
 
         if (!response.ok) {
+          if (response.status === 429) {
+            // Rate limited - will be handled by PollingManager
+            throw new Error(`Rate limited: ${response.status}`)
+          }
           throw new Error(`HTTP ${response.status}`)
         }
 
@@ -120,19 +142,35 @@ export function WebSocketProvider({
         console.error('Event polling error:', error)
         setConnectionStatus('error')
         setIsConnected(false)
+        throw error // Re-throw to let PollingManager handle backoff
       }
     }
 
-    // Initial poll
-    pollEvents()
-
-    // Set up polling interval - every 2 seconds for real-time feel
-    const interval = setInterval(pollEvents, 2000)
+    // Start polling
+    pollingManagerRef.current.startPolling(pollFunction)
 
     return () => {
-      clearInterval(interval)
+      if (pollingManagerRef.current) {
+        pollingManagerRef.current.stopPolling()
+      }
     }
-  }, [user, serverUrl, lastPollTimestamp, isConnected])
+  }, [user, serverUrl]) // Simplified dependencies
+
+  // Cleanup and tab visibility handling
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (pollingManagerRef.current) {
+        // Adjust polling based on tab visibility
+        pollingManagerRef.current.setActiveState(!document.hidden)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
 
   const joinChat = useCallback((chatId: string) => {
     // No action needed for polling-based system

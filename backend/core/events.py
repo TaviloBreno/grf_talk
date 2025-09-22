@@ -12,10 +12,18 @@ from django.views.generic import View
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
 
 # Store para eventos pendentes por usuário
 user_events = {}
 user_events_lock = Lock()
+
+# Rate limiting - track last poll time per user
+user_last_poll = {}
+user_poll_lock = Lock()
+
+# Minimum interval between polls (in seconds)
+MIN_POLL_INTERVAL = 1.0
 
 def add_user_event(user_id, event_type, data):
     """Adiciona um evento para um usuário específico"""
@@ -60,20 +68,38 @@ def clear_user_events(user_id, before_timestamp):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def poll_events(request):
-    """Endpoint para polling de eventos"""
+    """Endpoint para polling de eventos com rate limiting"""
     user_id = request.user.id
+    current_time = time.time()
+    
+    # Rate limiting check
+    with user_poll_lock:
+        last_poll = user_last_poll.get(user_id, 0)
+        time_since_last_poll = current_time - last_poll
+        
+        if time_since_last_poll < MIN_POLL_INTERVAL:
+            # Too frequent - return rate limit error
+            return Response({
+                'error': 'Rate limit exceeded',
+                'message': f'Please wait {MIN_POLL_INTERVAL - time_since_last_poll:.1f} seconds',
+                'retry_after': MIN_POLL_INTERVAL - time_since_last_poll
+            }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+        
+        # Update last poll time
+        user_last_poll[user_id] = current_time
+    
     since = request.GET.get('since')
     since_timestamp = float(since) if since else None
     
     events = get_user_events(user_id, since_timestamp)
     
     # Limpar eventos mais antigos que 5 minutos
-    cutoff_time = time.time() - 300
+    cutoff_time = current_time - 300
     clear_user_events(user_id, cutoff_time)
     
     return Response({
         'events': events,
-        'timestamp': time.time()
+        'timestamp': current_time
     })
 
 # Funções de conveniência para emitir eventos
